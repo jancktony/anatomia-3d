@@ -1,0 +1,12 @@
+{
+  "name": "Anatomía 3D — Atlas interactivo",
+  "short_name": "Anatomía 3D",
+  "description": "Atlas humano 3D educativo e interactivo.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "icons": []
+}
