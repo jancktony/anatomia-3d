@@ -18,6 +18,62 @@ const systems=[
 ]
 const systemMap=Object.fromEntries(systems.map(s=>[s.id,s]))
 const navigationVersion='regional-v2'
+const regionalSections=[
+ {id:'head',name:'Cabeza y cuello',icon:'◒',children:[
+  {id:'skull',name:'Cráneo',desc:'Neurocráneo, viscerocráneo y base'},
+  {id:'face',name:'Cara',desc:'Órbita, nariz, boca y expresión facial'},
+  {id:'brain',name:'Cavidad craneal',desc:'Encéfalo, meninges y nervios craneales'},
+  {id:'ear',name:'Oído',desc:'Oído externo, medio e interno'},
+  {id:'eye',name:'Ojo y órbita',desc:'Globo ocular y músculos extraoculares'},
+  {id:'neck',name:'Cuello',desc:'Faringe, laringe, tiroides, vasos y nervios'}
+ ]},
+ {id:'thorax',name:'Tórax',icon:'◇',children:[
+  {id:'thoracic-wall',name:'Pared torácica',desc:'Costillas, esternón e intercostales'},
+  {id:'heart',name:'Corazón',desc:'Corazón, pericardio y grandes vasos'},
+  {id:'lungs',name:'Pulmones y pleura',desc:'Pulmones, bronquios y pleuras'},
+  {id:'mediastinum',name:'Mediastino',desc:'Órganos, vasos y estructuras mediastínicas'}
+ ]},
+ {id:'abdomen',name:'Abdomen',icon:'◍',children:[
+  {id:'abdominal-wall',name:'Pared abdominal',desc:'Músculos, fascias y regiones'},
+  {id:'digestive-abdomen',name:'Sistema digestivo',desc:'Estómago, intestino, hígado y páncreas'},
+  {id:'retroperitoneum',name:'Retroperitoneo',desc:'Riñones, suprarrenales y grandes vasos'},
+  {id:'peritoneum',name:'Peritoneo',desc:'Cavidad y relaciones peritoneales'}
+ ]},
+ {id:'pelvis',name:'Pelvis',icon:'⌂',children:[
+  {id:'pelvic-bone',name:'Pelvis ósea',desc:'Coxales, sacro y articulaciones'},
+  {id:'pelvic-floor',name:'Suelo pélvico',desc:'Diafragma pélvico y periné'},
+  {id:'male-pelvis',name:'Pelvis masculina',desc:'Próstata, vejiga y genitales'},
+  {id:'female-pelvis',name:'Pelvis femenina',desc:'Útero, ovarios y genitales'}
+ ]},
+ {id:'back',name:'Espalda',icon:'▤',children:[
+  {id:'spine',name:'Columna vertebral',desc:'Cervical, torácica, lumbar y sacra'},
+  {id:'back-muscles',name:'Músculos de la espalda',desc:'Planos superficial y profundo'},
+  {id:'spinal-cord',name:'Médula y raíces',desc:'Médula espinal y nervios espinales'},
+  {id:'gluteal',name:'Región glútea',desc:'Glúteos y rotadores profundos'}
+ ]},
+ {id:'upper',name:'Miembro superior',icon:'↗',children:[
+  {id:'shoulder',name:'Hombro',desc:'Cintura escapular y manguito rotador'},
+  {id:'arm',name:'Brazo',desc:'Compartimentos anterior y posterior'},
+  {id:'elbow',name:'Codo',desc:'Articulación, músculos y fosas'},
+  {id:'forearm',name:'Antebrazo',desc:'Flexores, extensores, radio y ulna'},
+  {id:'wrist',name:'Muñeca',desc:'Carpo, articulaciones y tendones'},
+  {id:'hand',name:'Mano',desc:'Palma, dorso, dedos y músculos intrínsecos'}
+ ]},
+ {id:'lower',name:'Miembro inferior',icon:'↘',children:[
+  {id:'hip',name:'Cadera',desc:'Articulación, glúteos y rotadores'},
+  {id:'thigh',name:'Muslo',desc:'Compartimentos y fémur'},
+  {id:'knee',name:'Rodilla',desc:'Meniscos, ligamentos y articulación'},
+  {id:'leg',name:'Pierna',desc:'Tibia, fíbula y compartimentos'},
+  {id:'ankle',name:'Tobillo',desc:'Articulación y estructuras estabilizadoras'},
+  {id:'foot',name:'Pie',desc:'Tarso, metatarso, dedos y arcos'}
+ ]},
+ {id:'full',name:'Cuerpo completo',icon:'◉',children:[
+  {id:'surface',name:'Superficie corporal',desc:'Vista general y referencias superficiales'},
+  {id:'skeleton',name:'Esqueleto completo',desc:'Huesos y articulaciones'},
+  {id:'muscles',name:'Sistema muscular',desc:'Capas musculares superficiales y profundas'},
+  {id:'organs',name:'Órganos',desc:'Principales órganos y cavidades'}
+ ]}
+]
 function explain(name,system){
  const n=name.toLowerCase()
  const facts={'heart':'Bomba muscular de cuatro cavidades que impulsa la sangre por las circulaciones pulmonar y sistémica.','liver':'Órgano metabólico que procesa nutrientes, produce bilis y sintetiza numerosas proteínas plasmáticas.','brain':'Órgano central del sistema nervioso que integra información y participa en percepción, movimiento y regulación corporal.','stomach':'Cámara muscular que almacena y mezcla el alimento e inicia su digestión química.','spleen':'Órgano linfoide que filtra la sangre y participa en la respuesta inmunitaria.','pancreas':'Órgano con funciones digestivas y endocrinas; produce enzimas y hormonas como insulina y glucagón.','urinary bladder':'Reservorio muscular que almacena temporalmente la orina.','trachea':'Conducto respiratorio que conecta la laringe con los bronquios y mantiene abierta la vía aérea.','diaphragm':'Músculo que separa tórax y abdomen y participa de forma principal en la inspiración.'}
@@ -427,10 +483,18 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
 }
 export default function App(){
- const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[region,setRegion]=useState('full'),[search,setSearch]=useState(''),[catalog,setCatalog]=useState([]),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0),[isolate,setIsolate]=useState(false),[explode,setExplode]=useState(false)
+ const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[region,setRegion]=useState('full'),[search,setSearch]=useState(''),[catalog,setCatalog]=useState([]),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0),[isolate,setIsolate]=useState(false),[explode,setExplode]=useState(false),[navMode,setNavMode]=useState('regions'),[expandedRegion,setExpandedRegion]=useState('full'),[selectedSubregion,setSelectedSubregion]=useState(null)
  const toggle=id=>setActive(a=>({...a,[id]:!a[id]}))
  const matches=search.trim()?catalog.filter(p=>p.name?.toLowerCase().includes(search.trim().toLowerCase())).slice(0,12):[]
  const chooseSearch=p=>{setSelected(p);setSearch(p.name||'');setActive(a=>({...a,[p.system]:true}))}
+ const chooseRegion=(section,child=null)=>{
+  setRegion(section.id);setExpandedRegion(section.id);setSelectedSubregion(child?.id||null)
+  if(section.id==='head'&&child?.id==='face')setActive(a=>({...a,muscular:true,skeletal:false}))
+  else if(child?.id==='heart')setActive(a=>({...a,cardiac:true,arterial:true,venous:true}))
+  else if(child?.id==='lungs')setActive(a=>({...a,respiratory:true}))
+  else if(child?.id==='digestive-abdomen')setActive(a=>({...a,digestive:true}))
+  else if(child?.id==='spine'||child?.id==='skull')setActive(a=>({...a,skeletal:true}))
+ }
  return <div className="atlas-app">
   <header className="topbar">
    <div className="brand"><div className="brand-mark">A3</div><div><div className="brand-name">ANATOMÍA <span>3D</span></div><div className="brand-sub">Atlas interactivo</div></div></div>
@@ -440,16 +504,37 @@ export default function App(){
   <div className="workspace">
    <aside className="sidebar left-sidebar">
     <div className="sidebar-head"><div><small>EXPLORAR</small><h2>Anatomía</h2></div><span className="live-dot"/></div>
-    <div className="section-label">REGIONES</div>
-    <div className="region-grid">
-     {[['full','Cuerpo','◉'],['head','Cabeza','◒'],['face','Cara','◌'],['neck','Cuello','◈'],['chest','Tórax','◇'],['abdomen','Abdomen','◍'],['pelvis','Pelvis','⌂'],['upper','Miembro superior','↗'],['lower','Miembro inferior','↘']].map(([id,n,ic])=><button key={id} className={region===id?'region active':'region'} onClick={()=>setRegion(id)}><span>{ic}</span><b>{n}</b></button>)}
+    <div className="nav-switch">
+      <button className={navMode==='regions'?'active':''} onClick={()=>setNavMode('regions')}>Regiones</button>
+      <button className={navMode==='systems'?'active':''} onClick={()=>setNavMode('systems')}>Sistemas</button>
     </div>
-    <div className="section-label">SISTEMAS</div>
-    <div className="layer-list">
-     <button className="preset" onClick={()=>setActive(Object.fromEntries(systems.map(s=>[s.id,false])))}>Ocultar todos</button>
-     <button className="preset primary" onClick={()=>setActive(Object.fromEntries(systems.map(s=>[s.id,true])))}>Todos los sistemas</button>
-     {systems.map(s=><button className={active[s.id]?'layer active':'layer'} key={s.id} onClick={()=>toggle(s.id)}><span className="layer-icon" style={{background:'#'+s.color.toString(16).padStart(6,'0')}}>{s.icon}</span><span>{s.name}</span><i/></button>)}
-    </div>
+    {navMode==='regions'?<div className="region-browser">
+      <div className="section-label">ANATOMÍA REGIONAL</div>
+      <button className={region==='full'&&!selectedSubregion?'region-root active':'region-root'} onClick={()=>chooseRegion(regionalSections.find(s=>s.id==='full'))}>
+        <span>◉</span><div><b>Cuerpo completo</b><small>Vista general del atlas</small></div>
+      </button>
+      {regionalSections.filter(s=>s.id!=='full').map(section=><div className="region-tree" key={section.id}>
+        <button className={region===section.id&&!selectedSubregion?'region-root active':'region-root'} onClick={()=>chooseRegion(section)}>
+          <span>{section.icon}</span><div><b>{section.name}</b><small>{section.children.length} secciones</small></div><i className={expandedRegion===section.id?'open':''}>⌄</i>
+        </button>
+        {expandedRegion===section.id&&<div className="subregion-list">{section.children.map(child=>
+          <button key={child.id} className={selectedSubregion===child.id?'subregion active':'subregion'} onClick={()=>chooseRegion(section,child)}>
+            <span></span><div><b>{child.name}</b><small>{child.desc}</small></div>
+          </button>)}</div>}
+      </div>)}
+      <div className="section-label">CAPAS RÁPIDAS</div>
+      <div className="quick-layers">
+       <button onClick={()=>setActive(a=>({...a,skeletal:true}))}>Huesos</button>
+       <button onClick={()=>setActive(a=>({...a,muscular:true}))}>Músculos</button>
+       <button onClick={()=>setActive(a=>({...a,cardiac:true,arterial:true,venous:true}))}>Vasos</button>
+       <button onClick={()=>setActive(a=>({...a,nervous:true}))}>Nervios</button>
+       <button onClick={()=>setActive(a=>({...a,respiratory:true,digestive:true,urinary:true}))}>Órganos</button>
+      </div>
+    </div>:<div className="system-browser">
+      <div className="section-label">SISTEMAS DEL CUERPO</div>
+      <div className="system-presets"><button onClick={()=>setActive(Object.fromEntries(systems.map(s=>[s.id,false])))}>Ocultar todos</button><button onClick={()=>setActive(Object.fromEntries(systems.map(s=>[s.id,true])))}>Mostrar todos</button></div>
+      {systems.map(s=><button className={active[s.id]?'layer active':'layer'} key={s.id} onClick={()=>toggle(s.id)}><span className="layer-icon" style={{background:'#'+s.color.toString(16).padStart(6,'0')}}>{s.icon}</span><span>{s.name}</span><i/></button>)}
+    </div>}
    </aside>
    <section className="viewer-shell">
     <div className="viewer-toolbar">
@@ -457,7 +542,7 @@ export default function App(){
       <div className="toolbar-group"><button onClick={()=>setAutoRotate(!autoRotate)} className={autoRotate?'selected':''}>↻ Rotar</button><button onClick={()=>setTransparent(!transparent)} className={transparent?'selected':''}>◐ Transparencia</button><button onClick={()=>setExplode(!explode)} className={explode?'selected':''}>✧ Capas</button></div>
     </div>
     <AnatomyScene active={active} onSelect={setSelected} onCatalog={setCatalog} selected={selected} resetToken={reset} isolate={isolate} explode={explode} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress} region={region}/>
-    <div className="viewer-status"><span className="status-dot"/><span>{region==='full'?'CUERPO COMPLETO':region.toUpperCase()}</span><span>•</span><span>{progress<100?'Cargando '+progress+'%':'Listo'}</span></div>
+    <div className="viewer-status"><span className="status-dot"/><span>{selectedSubregion?selectedSubregion.replaceAll('-',' ').toUpperCase():region==='full'?'CUERPO COMPLETO':(regionalSections.find(s=>s.id===region)?.name||region).toUpperCase()}</span><span>•</span><span>{progress<100?'Cargando '+progress+'%':'Listo'}</span></div>
     <div className="quick-controls"><button onClick={()=>setReset(x=>x+1)}>⟳</button><button onClick={()=>setView('front')}>●</button><button onClick={()=>setView('back')}>◐</button></div>
    </section>
    <aside className="sidebar detail-sidebar">
