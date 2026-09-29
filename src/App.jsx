@@ -212,6 +212,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     let appliedView='front',appliedRegion='full'
     const setViewPosition=which=>{
      const bounds=new THREE.Box3().setFromObject(group)
+     if(detailedGroup)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
      const center=bounds.getCenter(new THREE.Vector3())
      const sphere=bounds.getBoundingSphere(new THREE.Sphere())
      const radius=Math.max(sphere.radius,.5)
@@ -224,6 +225,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     }
     const setRegionFocus=which=>{
      const b=new THREE.Box3().setFromObject(group)
+     if(detailedGroup)b.union(new THREE.Box3().setFromObject(detailedGroup))
      const size=b.getSize(new THREE.Vector3())
      const cx=(b.min.x+b.max.x)/2, cz=(b.min.z+b.max.z)/2
      const t={head:.9,face:.88,neck:.76,chest:.61,abdomen:.43,pelvis:.25,upper:.58,lower:.29}[which]??.5
@@ -392,6 +394,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      detailedGroup.position.copy(center).sub(detailedCenter)
      detailedGroup.updateMatrixWorld(true)
      onCatalog?.([...detailedParts,...parts])
+     appliedView='';appliedRegion='full';setViewPosition(viewRef.current)
      const allBounds=new THREE.Box3().setFromObject(group)
      allBounds.union(new THREE.Box3().setFromObject(detailedGroup))
      const allSphere=allBounds.getBoundingSphere(new THREE.Sphere())
