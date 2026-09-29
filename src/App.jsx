@@ -121,7 +121,13 @@ async function fetchFirst(urls){
  }
  throw lastError||new Error('No se pudo descargar el recurso anatómico.')
 }
+const anatomyResourceCache=new Map()
+const anatomyBufferCache=new Map()
+
 async function loadAtlas(bodySex='male'){
+ const cacheKey=`atlas:${bodySex}`
+ if(anatomyResourceCache.has(cacheKey))return anatomyResourceCache.get(cacheKey)
+ const promise=(async()=>{
  const base=new URL(bodySex==='female'?'./models/female/':MODEL_BASE,document.baseURI)
  const res=await fetchFirst([new URL('atlas.json',base).href])
  const atlas=await res.json()
@@ -133,16 +139,29 @@ async function loadAtlas(bodySex='male'){
   gzipUrls:[localFile(c.gzip)].filter(Boolean)
  }))
  return atlas
+ })()
+ anatomyResourceCache.set(cacheKey,promise)
+ return promise
 }
 async function loadDetailedSkeleton(){
+ const cacheKey='detailed:skeleton'
+ if(anatomyResourceCache.has(cacheKey))return anatomyResourceCache.get(cacheKey)
+ const promise=(async()=>{
  const base=new URL(MODEL_BASE,document.baseURI)
  const res=await fetch(new URL('detailed-skeleton.glb',base).href,{cache:'no-store'})
  if(!res.ok)throw new Error('No se pudo cargar el esqueleto detallado.')
  const buffer=await res.arrayBuffer()
  const loader=new GLTFLoader()
- return await new Promise((resolve,reject)=>loader.parse(buffer,'',resolve,reject))
+ const gltf=await new Promise((resolve,reject)=>loader.parse(buffer,'',resolve,reject))
+ return gltf
+ })()
+ anatomyResourceCache.set(cacheKey,promise)
+ return promise
 }
 async function loadDetailedMuscles(){
+ const cacheKey='detailed:muscles'
+ if(anatomyResourceCache.has(cacheKey))return anatomyResourceCache.get(cacheKey)
+ const promise=(async()=>{
  const base=new URL(MODEL_BASE,document.baseURI)
  const [modelResponse,mappingResponse]=await Promise.all([
   fetch(new URL('detailed-muscles.glb',base).href,{cache:'no-store'}),
@@ -153,6 +172,9 @@ async function loadDetailedMuscles(){
  const loader=new GLTFLoader()
  const gltf=await new Promise((resolve,reject)=>loader.parse(modelBuffer,'',resolve,reject))
  return {gltf,mapping:Array.isArray(mapping)?mapping:[]}
+ })()
+ anatomyResourceCache.set(cacheKey,promise)
+ return promise
 }
 async function decode(response,expected,compressed){
  if(!response.ok)throw new Error('No se pudo descargar una capa anatómica.')
@@ -174,7 +196,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
    try{
     atlas=await loadAtlas(bodySex);if(disposed)return;parts=atlas.parts
     let detailed=null,detailedSkeleton=null
-    const detailedPromise=bodySex==='male'?Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>[null,null]):Promise.resolve([null,null])
+    const detailedPromise=Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>[null,null])
     onCatalog?.(parts)
 
     scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
@@ -539,6 +561,9 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     return()=>{renderer.domElement.removeEventListener('click',click);window.removeEventListener('resize',resize)}
    }catch(e){if(!disposed)setError(e instanceof Error?e.message:'No se pudo cargar el modelo anatómico.')}
   }
+  // Precarga ambos atlas desde el primer montaje. El cambio masculino/femenino
+  // reutiliza estos recursos en caché y no vuelve a descargar las capas anatómicas.
+  Promise.all([loadAtlas('male'),loadAtlas('female'),loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>{})
   init()
   return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());detailedMeshes.forEach(m=>m.geometry.dispose());materials.forEach(m=>m.dispose())}
  },[bodySex])
