@@ -168,3 +168,24 @@ footer{background:rgba(255,247,250,.9);border-color:#efc2d3;color:#a17b8c}
  .left{background:rgba(255,247,250,.96);border-color:#e5abc2;box-shadow:0 14px 40px rgba(145,52,91,.2)}
  .viewbar{background:rgba(255,247,250,.96)}
 }
+
+
+/* Mobile adaptive atlas */
+@media(max-width:650px){
+  .viewer{height:100dvh;min-height:0}
+  .scene{inset:0 0 22dvh 0}
+  .left{bottom:8px;max-height:20dvh;padding:8px}
+  .left .tip{display:none}
+  .systems{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .system{font-size:9px;padding:6px}
+  .panel-title{font-size:9px;margin-bottom:5px}
+  .search{padding:6px 8px;margin-bottom:5px}
+  .search-hint{display:none}
+  .viewbar{top:7px}
+}
+@media(max-width:390px){
+  .scene{inset:0 0 24dvh 0}
+  .left{max-height:22dvh}
+  .systems{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .system{font-size:8px}
+}
