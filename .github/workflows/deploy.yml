@@ -38,6 +38,19 @@ jobs:
           cp /tmp/human-atlas/public/models/*.bin public/models/
           cp /tmp/human-atlas/public/models/*.bin.gz public/models/
 
+      - name: Download female anatomy atlas
+        run: |
+          rm -rf /tmp/female-atlas
+          git clone --depth 1 https://github.com/HiMahendraBeniwal/female-atlas.git /tmp/female-atlas
+          test -f /tmp/female-atlas/public/models/atlas.json
+          mkdir -p public/models/female
+          cp /tmp/female-atlas/public/models/atlas.json public/models/female/
+          find /tmp/female-atlas/public/models -maxdepth 1 -type f \\
+            \( -name '*.bin' -o -name '*.bin.gz' \) \\
+            -exec cp {} public/models/female/ \\
+            ;
+          cp /tmp/female-atlas/public/ATTRIBUTION.md public/models/female/ATTRIBUTION.md
+
       - name: Download detailed muscle model
         run: |
           curl -L --fail --retry 3 -o public/models/detailed-muscles.glb https://raw.githubusercontent.com/JohanBellander/BodyExplorer/main/public/anatomy.glb
