@@ -46,6 +46,14 @@ async function loadAtlas(){
  }))
  return atlas
 }
+async function loadDetailedSkeleton(){
+ const base=new URL(MODEL_BASE,document.baseURI)
+ const res=await fetch(new URL('detailed-skeleton.glb',base).href,{cache:'no-store'})
+ if(!res.ok)throw new Error('No se pudo cargar el esqueleto detallado.')
+ const buffer=await res.arrayBuffer()
+ const loader=new GLTFLoader()
+ return await new Promise((resolve,reject)=>loader.parse(buffer,'',resolve,reject))
+}
 async function loadDetailedMuscles(){
  const base=new URL(MODEL_BASE,document.baseURI)
  const [modelResponse,mappingResponse]=await Promise.all([
@@ -76,8 +84,8 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
   const init=async()=>{
    try{
     atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
-    let detailed=null
-    try{detailed=await loadDetailedMuscles()}catch(_){detailed=null}
+    let detailed=null,detailedSkeleton=null
+    try{[detailed,detailedSkeleton]=await Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()])}catch(_){detailed=null;detailedSkeleton=null}
     if(disposed)return
     if(detailed){
      detailedParts=detailed.mapping.map((p,i)=>({
@@ -173,6 +181,36 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
     }
     if(detailed){
+     const sourceRoot=detailed.gltf.scene
+     const sourceBox=new THREE.Box3().setFromObject(sourceRoot)
+     const sourceCenter=sourceBox.getCenter(new THREE.Vector3())
+     const sourceSize=sourceBox.getSize(new THREE.Vector3())
+     const sourceScale=30/Math.max(sourceSize.z,1)
+     const transformDetailedGeometry=geometry=>{
+      const pos=geometry.getAttribute('position')
+      const normal=geometry.getAttribute('normal')
+      if(pos){
+       const a=pos.array
+       for(let i=0;i<a.length;i+=3){
+        const x=a[i],y=a[i+1],z=a[i+2]
+        a[i]=(x-sourceCenter.x)*sourceScale
+        a[i+1]=(z-sourceCenter.z)*sourceScale
+        a[i+2]=-(y-sourceCenter.y)*sourceScale
+       }
+       pos.needsUpdate=true
+      }
+      if(normal){
+       const a=normal.array
+       for(let i=0;i<a.length;i+=3){
+        const x=a[i],y=a[i+1],z=a[i+2]
+        a[i]=x
+        a[i+1]=z
+        a[i+2]=-y
+       }
+       normal.needsUpdate=true
+      }
+      geometry.computeBoundingBox();geometry.computeBoundingSphere()
+     }
      const rawMapping=detailed.mapping||[]
      const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\s+/g,' ').trim()
      const mappingQueues=new Map()
@@ -190,30 +228,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       const raw=queue.length?queue.shift():rawMapping[idx]
       const meta=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
       const geometry=node.geometry.clone()
-      const pos=geometry.getAttribute('position')
-      const normal=geometry.getAttribute('normal')
-      if(pos){
-       const a=pos.array
-       for(let i=0;i<a.length;i+=3){
-        const x=a[i],y=a[i+1],z=a[i+2]
-        a[i]=x*.001
-        a[i+1]=z*.001+.0781112
-        a[i+2]=-y*.001-.1
-       }
-       pos.needsUpdate=true
-      }
-      if(normal){
-       const a=normal.array
-       for(let i=0;i<a.length;i+=3){
-        const x=a[i],y=a[i+1],z=a[i+2]
-        a[i]=x
-        a[i+1]=z
-        a[i+2]=-y
-       }
-       normal.needsUpdate=true
-      }
-      geometry.computeBoundingBox()
-      geometry.computeBoundingSphere()
+      transformDetailedGeometry(geometry)
       const material=new THREE.MeshPhysicalMaterial({
        color:meta.isTendon?0xe2c8b4:0xb83f45,
        roughness:meta.isTendon?.62:.58,
@@ -234,6 +249,22 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       materials.push(material)
      })
      detailedGroup.updateMatrixWorld(true)
+     if(detailedSkeleton){
+      detailedSkeleton.scene.traverse(node=>{
+       if(!node.isMesh)return
+       const geometry=node.geometry.clone()
+       transformDetailedGeometry(geometry)
+       const material=new THREE.MeshPhysicalMaterial({
+        color:0xe6dcc9,roughness:.7,metalness:0,clearcoat:.08,
+        clearcoatRoughness:.78,side:THREE.DoubleSide,
+        transparent:true,opacity:.86,depthWrite:true
+       })
+       const mesh=new THREE.Mesh(geometry,material)
+       mesh.name=node.name||'Hueso'
+       mesh.userData={system:'skeletal',isDetailedSkeleton:true}
+       detailedGroup.add(mesh);detailedMeshes.push(mesh);materials.push(material)
+      })
+     }
      const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
      atlasMuscle.forEach(m=>m.visible=false)
     }
@@ -309,16 +340,19 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
        mesh.material.opacity=transparentRef.current?.52:1
       })
       detailedMeshes.forEach(mesh=>{
-       const systemVisible=!!activeRef.current.muscular
+       const system=mesh.userData.system
+       const systemVisible=!!activeRef.current[system]
        let visible=systemVisible
-       if(isolateRef.current && selectedRef.current) visible=systemVisible && selectedRef.current.system==='muscular'
+       if(isolateRef.current && selectedRef.current) visible=systemVisible && system===selectedRef.current.system
        const idx=mesh.userData.detailIndex
        const selectedIndex=selectedRef.current?detailedParts.findIndex(p=>p.id===selectedRef.current.id):-1
        mesh.visible=visible
        mesh.material.transparent=!!transparentRef.current
        mesh.material.opacity=transparentRef.current?.52:1
-       mesh.material.emissive.set(idx===selectedIndex?0x7a1630:0x000000)
-       mesh.material.emissiveIntensity=idx===selectedIndex?.62:0
+       if(mesh.userData.isDetailedMuscle){
+        mesh.material.emissive.set(idx===selectedIndex?0x7a1630:0x000000)
+        mesh.material.emissiveIntensity=idx===selectedIndex?.62:0
+       }
       })
       const currentView=viewRef.current
       if(currentView!==appliedView)setViewPosition(currentView)
