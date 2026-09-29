@@ -64,7 +64,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
    try{
     atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
     onCatalog?.(parts)
-    scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f)
+    scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
     camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
     renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})
     renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
