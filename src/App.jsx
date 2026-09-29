@@ -389,9 +389,21 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
      atlasMuscle.forEach(m=>m.visible=false)
 
-      const detailedBounds=new THREE.Box3().setFromObject(detailedGroup)
-     const detailedCenter=detailedBounds.getCenter(new THREE.Vector3())
-     detailedGroup.position.copy(center).sub(detailedCenter)
+      // Ajuste de escala: el modelo detallado debe ocupar exactamente la misma altura
+     // que el atlas base. Antes usábamos una escala fija (30), que hacía que el
+     // cuerpo detallado quedara más pequeño cuando cambiaba la proporción del atlas.
+     detailedGroup.updateMatrixWorld(true)
+     const detailedBounds=new THREE.Box3().setFromObject(detailedGroup)
+     const detailedSize=detailedBounds.getSize(new THREE.Vector3())
+     const atlasSize=atlasBounds.getSize(new THREE.Vector3())
+     const heightRatio=atlasSize.y/Math.max(detailedSize.y,0.0001)
+     detailedGroup.scale.setScalar(heightRatio)
+     detailedGroup.updateMatrixWorld(true)
+
+     // Después de escalar, centramos ambos modelos en el mismo punto anatómico.
+     const fittedBounds=new THREE.Box3().setFromObject(detailedGroup)
+     const fittedCenter=fittedBounds.getCenter(new THREE.Vector3())
+     detailedGroup.position.add(center).sub(fittedCenter)
      detailedGroup.updateMatrixWorld(true)
      onCatalog?.([...detailedParts,...parts])
      appliedView='';appliedRegion='full';setViewPosition(viewRef.current)
