@@ -224,26 +224,26 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     renderer.localClippingEnabled=true
     renderer.shadowMap.type=THREE.PCFSoftShadowMap
     renderer.toneMapping=THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure=1.08
+    renderer.toneMappingExposure=1.0
     renderer.physicallyCorrectLights=true
     renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.25:1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
     controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.12;controls.enableZoom=true;controls.zoomToCursor=true;controls.enablePan=false;controls.screenSpacePanning=false;controls.rotateSpeed=0.62;controls.zoomSpeed=0.72;controls.target.set(0,.85,0);controls.minDistance=.5;controls.maxDistance=12
-    scene.add(new THREE.HemisphereLight(0xfff7fa,0x20151a,1.55))
-    const key=new THREE.DirectionalLight(0xfff8f4,4.2);key.position.set(4,6,5);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.near=.1;key.shadow.camera.far=30;key.shadow.bias=-.0003;scene.add(key)
-    const fill=new THREE.DirectionalLight(0xffd4df,1.25);fill.position.set(-4,2,4);scene.add(fill)
-    const rim=new THREE.DirectionalLight(0x9db7d9,1.55);rim.position.set(-4,4,-5);scene.add(rim)
-    const soft=new THREE.PointLight(0xffb6ce,.55,12,2);soft.position.set(0,1.2,3);scene.add(soft)
+    scene.add(new THREE.HemisphereLight(0xfffafc,0x171015,1.15))
+    const key=new THREE.DirectionalLight(0xfff7f0,3.15);key.position.set(4.5,7,5.5);key.castShadow=true;key.shadow.mapSize.set(mobile?512:1536,mobile?512:1536);key.shadow.camera.near=.1;key.shadow.camera.far=30;key.shadow.bias=-.0002;scene.add(key)
+    const fill=new THREE.DirectionalLight(0xdbe7ff,1.05);fill.position.set(-5,3,4);scene.add(fill)
+    const rim=new THREE.DirectionalLight(0xb8c9e8,1.35);rim.position.set(-4,5,-6);scene.add(rim)
+    const soft=new THREE.PointLight(0xffc4d1,.28,14,2);soft.position.set(1,1.4,3.5);scene.add(soft)
     group=new THREE.Group();scene.add(group)
     detailedGroup=new THREE.Group();scene.add(detailedGroup)
     const realisticColors={
-     skeletal:0xe2d6bd,muscular:0x8f302f,cardiac:0x9e2634,arterial:0xb72d32,
-     venous:0x355f91,nervous:0xd2a64c,respiratory:0xb77b86,digestive:0x9b6049,
-     urinary:0x875746,lymphatic:0x66896b,endocrine:0xb27e91,reproductive:0xa56c64,
-     connective:0xa99a8d,sensory:0x81a8b5
+     skeletal:0xd9cdb7,muscular:0x7d252b,cardiac:0x7f1f2c,arterial:0xa92d30,
+     venous:0x315b86,nervous:0xc29b55,respiratory:0x9d737d,digestive:0x8b5544,
+     urinary:0x795042,lymphatic:0x5d7c68,endocrine:0x9b6f83,reproductive:0x8e5c58,
+     connective:0x928276,sensory:0x7197a1
     }
     const realisticFinish={
      skeletal:{roughness:.62,metalness:0,clearcoat:.06,clearcoatRoughness:.8},
-     muscular:{roughness:.58,metalness:0,clearcoat:.16,clearcoatRoughness:.62,sheen:.22},
+     muscular:{roughness:.68,metalness:0,clearcoat:.04,clearcoatRoughness:.9,sheen:.12},
      cardiac:{roughness:.56,metalness:.01},
      arterial:{roughness:.48,metalness:.02},
      venous:{roughness:.52,metalness:.02},
@@ -260,7 +260,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     const makeMaterial=system=>{
      const finish=realisticFinish[system]||{}
      const material=system==='muscular'
-      ? new THREE.MeshPhysicalMaterial({color:realisticColors[system]??0xd6b8c2,roughness:finish.roughness??.6,metalness:finish.metalness??0,clearcoat:finish.clearcoat??0,clearcoatRoughness:finish.clearcoatRoughness??.8,sheen:finish.sheen??0,sheenColor:new THREE.Color(0x5b0d18),ior:1.4,side:THREE.DoubleSide})
+      ? new THREE.MeshPhysicalMaterial({color:realisticColors[system]??0xd6b8c2,roughness:finish.roughness??.6,metalness:finish.metalness??0,clearcoat:finish.clearcoat??0,clearcoatRoughness:finish.clearcoatRoughness??.8,sheen:finish.sheen??0,sheenColor:new THREE.Color(0x4b1018),ior:1.38,side:THREE.DoubleSide})
       : new THREE.MeshPhysicalMaterial({color:realisticColors[system]??0xd6b8c2,roughness:finish.roughness??.6,metalness:finish.metalness??0,clearcoat:finish.clearcoat??0,clearcoatRoughness:finish.clearcoatRoughness??.8,ior:1.4,side:THREE.DoubleSide})
      return material
     }
@@ -301,7 +301,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
         shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float partIndex;\nvarying float vPartIndex;')
         shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvPartIndex=partIndex;')
         shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying float vPartIndex;\nuniform float uSelectedPart;\nfloat muscleHash(float n){return fract(sin(n*12.9898)*43758.5453);}')
-        shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat mv=muscleHash(vPartIndex);\nvec3 muscleTint=mix(vec3(0.62,0.09,0.12),vec3(0.88,0.30,0.30),mv*0.72);\ndiffuseColor.rgb*=muscleTint;\nif(abs(vPartIndex-uSelectedPart)<0.5){diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.32,0.62),0.72);}')
+        shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat mv=muscleHash(vPartIndex);\nvec3 muscleTint=mix(vec3(0.34,0.035,0.055),vec3(0.72,0.16,0.18),mv*0.72);\ndiffuseColor.rgb*=muscleTint;\nif(abs(vPartIndex-uSelectedPart)<0.5){diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.32,0.62),0.72);}')
         mesh.material.userData.shader=shader
        }
       }
