@@ -28,6 +28,15 @@ jobs:
         with:
           node-version: 22
 
+      - name: Download anatomy model
+        run: |
+          rm -rf /tmp/human-atlas
+          git clone --depth 1 https://github.com/ashemag/human-atlas.git /tmp/human-atlas
+          mkdir -p public/models
+          cp /tmp/human-atlas/public/models/atlas.json public/models/
+          cp /tmp/human-atlas/public/models/*.bin public/models/
+          cp /tmp/human-atlas/public/models/*.bin.gz public/models/
+
       - name: Install dependencies
         run: npm install
 
