@@ -4,7 +4,19 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <meta name="theme-color" content="#07111f"/>
+  <meta name="description" content="Atlas humano 3D educativo e interactivo."/>
+  <link rel="manifest" href="./manifest.webmanifest"/>
   <title>Anatomía 3D — Atlas interactivo</title>
 </head>
-<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/anatomia-3d/sw.js');
+      });
+    }
+  </script>
+</body>
 </html>
