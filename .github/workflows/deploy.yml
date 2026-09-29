@@ -34,16 +34,18 @@ jobs:
           git clone --depth 1 https://github.com/ashemag/human-atlas.git /tmp/human-atlas
           mkdir -p public/models
           cp /tmp/human-atlas/public/models/atlas.json public/models/
-          cp /tmp/human-atlas/public/models/*.bin public/models/
-          cp /tmp/human-atlas/public/models/*.bin.gz public/models/
+          find /tmp/human-atlas/public/models -maxdepth 1 -type f -name '*.bin' -exec cp {} public/models/ \;
+          find /tmp/human-atlas/public/models -maxdepth 1 -type f -name '*.bin.gz' -exec cp {} public/models/ \;
+          test -s public/models/atlas.json
+          test -n "$(find public/models -maxdepth 1 -type f -name '*.bin' -print -quit)"
 
       - name: Download female anatomy atlas
         run: |
           rm -rf /tmp/female-atlas
           git clone --depth 1 --filter=blob:none --no-checkout https://github.com/HiMahendraBeniwal/female-atlas.git /tmp/female-atlas
           cd /tmp/female-atlas
-          git sparse-checkout init --cone
-          git sparse-checkout set public/models public/ATTRIBUTION.md
+          git sparse-checkout init --no-cone
+          git sparse-checkout set '/public/models/*' '/public/ATTRIBUTION.md'
           git checkout
           test -s public/models/atlas.json
           mkdir -p "$GITHUB_WORKSPACE/public/models/female"
@@ -59,7 +61,7 @@ jobs:
           curl -L --fail --retry 3 -o public/models/detailed-skeleton.glb https://raw.githubusercontent.com/JohanBellander/BodyExplorer/main/public/skeleton.glb
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Prepare build version
         run: |
