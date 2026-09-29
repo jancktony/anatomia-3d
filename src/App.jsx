@@ -59,7 +59,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
  activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
-  let renderer,scene,camera,controls,group,atlas,parts=[],meshes=[],pickers=[],materials=[],partTexture,selectionTexture
+  let renderer,scene,camera,controls,group,atlas,parts=[],meshes=[],pickers=[],materials=[]
   const init=async()=>{
    try{
     atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
@@ -73,21 +73,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     const key=new THREE.DirectionalLight(0xffffff,2.8);key.position.set(3,5,4);scene.add(key)
     const rim=new THREE.DirectionalLight(0x759bc0,1.5);rim.position.set(-4,2,-4);scene.add(rim)
     group=new THREE.Group();scene.add(group)
-    const width=THREE.MathUtils.ceilPowerOfTwo(parts.length),data=new Uint8Array(width*4),selectedData=new Uint8Array(width*4)
-    partTexture=new THREE.DataTexture(data,width,1,THREE.RGBAFormat,THREE.UnsignedByteType);partTexture.minFilter=THREE.NearestFilter;partTexture.magFilter=THREE.NearestFilter;partTexture.needsUpdate=true
-    selectionTexture=new THREE.DataTexture(selectedData,width,1);selectionTexture.needsUpdate=true
-    const makeMaterial=system=>{
-     const m=new THREE.MeshStandardMaterial({color:systemMap[system]?.color||0xaebbb8,roughness:.58,metalness:.04,transparent:true,opacity:1,side:THREE.DoubleSide})
-     m.onBeforeCompile=shader=>{
-      shader.uniforms.partState={value:partTexture};shader.uniforms.selectionState={value:selectionTexture};shader.uniforms.stateWidth={value:width}
-      shader.vertexShader='attribute float partIndex; uniform sampler2D partState; uniform sampler2D selectionState; uniform float stateWidth; varying float partVisible; varying float partSelected;\\n'+shader.vertexShader
-      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\\nvec2 uvState=vec2((partIndex+0.5)/stateWidth,0.5);vec4 st=texture2D(partState,uvState);transformed+=st.xyz;partVisible=st.w;partSelected=texture2D(selectionState,uvState).r;')
-      shader.fragmentShader='varying float partVisible; varying float partSelected;\\n'+shader.fragmentShader
-      shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\\nif(partVisible<0.5)discard;')
-      shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.28,0.85,0.76),partSelected*0.8);')
-     }
-     materials.push(m);return m
-    }
+    const makeMaterial=system=>new THREE.MeshStandardMaterial({color:systemMap[system]?.color||0xaebbb8,roughness:.58,metalness:.04,side:THREE.DoubleSide})
     const mats=new Map(systems.map(s=>[s.id,makeMaterial(s.id)]))
     let loaded=0
     for(let ci=0;ci<atlas.chunks.length;ci++){
@@ -105,10 +91,19 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       const picker=new THREE.Mesh(g);picker.visible=false;pickers[i]=picker;group.add(picker)
       const arr=groups.get(p.system)||[];arr.push(g);groups.set(p.system,arr)
      })
-     groups.forEach((gs,system)=>{const merged=mergeGeometries(gs,false);if(!merged)return;const mesh=new THREE.Mesh(merged,mats.get(system)||mats.get('connective'));mesh.frustumCulled=false;group.add(mesh);meshes.push(mesh)})
+     groups.forEach((gs,system)=>{
+      const merged=mergeGeometries(gs,false)
+      if(!merged)return
+      merged.computeBoundingSphere()
+      const mesh=new THREE.Mesh(merged,mats.get(system)||mats.get('connective'))
+      mesh.frustumCulled=false
+      mesh.userData.system=system
+      group.add(mesh)
+      meshes.push(mesh)
+     })
      loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
     }
-    modelRef.current={atlas,parts,data,selectedData,width,partTexture,selectionTexture,camera,controls,group}
+    modelRef.current={atlas,parts,camera,controls,group,meshes}
     const ray=new THREE.Raycaster(),mouse=new THREE.Vector2()
     const click=e=>{
      const r=renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera)
@@ -123,25 +118,15 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      if(disposed)return;frame=requestAnimationFrame(animate)
      const st=modelRef.current
      if(st){
-      parts.forEach((p,i)=>{
-       const isSelected=selectedRef.current?.id===p.id
-       const visible=!!activeRef.current[p.system] && (!isolateRef.current || isSelected)
-       data[i*4+3]=visible?255:0
-       selectedData[i*4]=isSelected?255:0
-       let ox=0,oy=0,oz=0
-       if(explodeRef.current && visible && !isSelected){
-        const b=p.bounds
-        if(b){
-         const cx=(b[0][0]+b[1][0])/2,cy=(b[0][1]+b[1][1])/2,cz=(b[0][2]+b[1][2])/2
-         const len=Math.hypot(cx,cy,cz)||1
-         const amount=.85
-         ox=cx/len*amount;oy=cy/len*amount;oz=cz/len*amount
-        }
-       }
-       
+      meshes.forEach(mesh=>{
+       const system=mesh.userData.system
+       const systemVisible=!!activeRef.current[system]
+       let visible=systemVisible
+       if(isolateRef.current && selectedRef.current) visible=systemVisible && system===selectedRef.current.system
+       mesh.visible=visible
+       mesh.material.transparent=!!transparentRef.current
+       mesh.material.opacity=transparentRef.current?.52:1
       })
-      materials.forEach(m=>{m.transparent=true;m.opacity=transparentRef.current?.52:1;m.needsUpdate=true})
-      partTexture.needsUpdate=true;selectionTexture.needsUpdate=true
       const currentView=viewRef.current;const v=currentView==='back'?[0,1,-4.2]:currentView==='left'?[-4.2,1,0]:currentView==='right'?[4.2,1,0]:[0,1,4.2]
       camera.position.lerp(new THREE.Vector3(...v),.08);controls.target.set(0,.85,0)
       group.rotation.y=autoRotateRef.current?group.rotation.y+.0018:group.rotation.y
@@ -153,7 +138,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
    }catch(e){if(!disposed)setError(e instanceof Error?e.message:'No se pudo cargar el modelo anatómico.')}
   }
   init()
-  return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());pickers.forEach(m=>m?.geometry.dispose());materials.forEach(m=>m.dispose());partTexture?.dispose();selectionTexture?.dispose()}
+  return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());pickers.forEach(m=>m?.geometry.dispose());materials.forEach(m=>m.dispose())}
  },[])
  useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0}},[resetToken])
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
