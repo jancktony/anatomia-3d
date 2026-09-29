@@ -1,4 +1,4 @@
-const CACHE = 'anatomia-3d-v1';
+const CACHE = 'anatomia-3d-v2';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
