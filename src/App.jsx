@@ -69,11 +69,39 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})
     renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
     controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.enableZoom=true;controls.zoomToCursor=true;controls.screenSpacePanning=false;controls.target.set(0,.85,0);controls.minDistance=.08;controls.maxDistance=30
-    scene.add(new THREE.HemisphereLight(0xffffff,0x172033,1.9))
-    const key=new THREE.DirectionalLight(0xffffff,2.8);key.position.set(3,5,4);scene.add(key)
-    const rim=new THREE.DirectionalLight(0x759bc0,1.5);rim.position.set(-4,2,-4);scene.add(rim)
+    scene.add(new THREE.HemisphereLight(0xfff4f8,0x26131d,2.15))
+    const key=new THREE.DirectionalLight(0xfff7fb,3.1);key.position.set(3,5,4);scene.add(key)
+    const fill=new THREE.DirectionalLight(0xffc3d8,1.05);fill.position.set(-4,2,3);scene.add(fill)
+    const rim=new THREE.DirectionalLight(0x8ca9d8,1.35);rim.position.set(-4,3,-4);scene.add(rim)
     group=new THREE.Group();scene.add(group)
-    const makeMaterial=system=>new THREE.MeshStandardMaterial({color:0xe7d3da,roughness:.58,metalness:.04,side:THREE.DoubleSide})
+    const realisticColors={
+     skeletal:0xe7dcc8,muscular:0xa9443f,cardiac:0xb52f3d,arterial:0xc73b3f,
+     venous:0x416fa3,nervous:0xd3a84f,respiratory:0xc98b92,digestive:0xb56e54,
+     urinary:0x9c6b58,lymphatic:0x789b72,endocrine:0xc28d9d,reproductive:0xb77d73,
+     connective:0xb6a58e,sensory:0x9abdc8
+    }
+    const realisticFinish={
+     skeletal:{roughness:.72,metalness:.01},
+     muscular:{roughness:.62,metalness:.01},
+     cardiac:{roughness:.56,metalness:.01},
+     arterial:{roughness:.48,metalness:.02},
+     venous:{roughness:.52,metalness:.02},
+     nervous:{roughness:.58,metalness:.01},
+     respiratory:{roughness:.66,metalness:0},
+     digestive:{roughness:.62,metalness:0},
+     urinary:{roughness:.6,metalness:0},
+     lymphatic:{roughness:.64,metalness:0},
+     endocrine:{roughness:.58,metalness:0},
+     reproductive:{roughness:.6,metalness:0},
+     connective:{roughness:.72,metalness:0},
+     sensory:{roughness:.5,metalness:0}
+    }
+    const makeMaterial=system=>new THREE.MeshStandardMaterial({
+     color:realisticColors[system]??0xd6b8c2,
+     roughness:realisticFinish[system]?.roughness??.6,
+     metalness:realisticFinish[system]?.metalness??0,
+     side:THREE.DoubleSide
+    })
     const mats=new Map(systems.map(s=>[s.id,makeMaterial(s.id)]))
     let loaded=0
     for(let ci=0;ci<atlas.chunks.length;ci++){
