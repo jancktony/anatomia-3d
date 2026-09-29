@@ -2,9 +2,10 @@ import React,{useEffect,useRef,useState} from 'react'
 import * as THREE from 'three'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 const MODEL_BASE='./models/'
-const MODEL_SOURCE='BodyParts3D 4.0 · CC BY 4.0'
+const MODEL_SOURCE='BodyParts3D 4.0 · CC BY 4.0 + capa muscular detallada BodyExplorer/Z-Anatomy · CC BY-SA 4.0'
 
 const systems=[
  {id:'skeletal',name:'Esquelético',icon:'🦴',color:0xe2d9ba},{id:'muscular',name:'Muscular',icon:'💪',color:0xa85b50},
@@ -45,6 +46,18 @@ async function loadAtlas(){
  }))
  return atlas
 }
+async function loadDetailedMuscles(){
+ const base=new URL(MODEL_BASE,document.baseURI)
+ const [modelResponse,mappingResponse]=await Promise.all([
+  fetch(new URL('detailed-muscles.glb',base).href,{cache:'no-store'}),
+  fetch(new URL('detailed-muscles.json',base).href,{cache:'no-store'})
+ ])
+ if(!modelResponse.ok||!mappingResponse.ok)throw new Error('No se pudo cargar la capa muscular detallada.')
+ const [modelBuffer,mapping]=await Promise.all([modelResponse.arrayBuffer(),mappingResponse.json()])
+ const loader=new GLTFLoader()
+ const gltf=await new Promise((resolve,reject)=>loader.parse(modelBuffer,'',resolve,reject))
+ return {gltf,mapping:Array.isArray(mapping)?mapping:[]}
+}
 async function decode(response,expected,compressed){
  if(!response.ok)throw new Error('No se pudo descargar una capa anatómica.')
  const payload=await response.arrayBuffer(),u=new Uint8Array(payload)
@@ -59,11 +72,26 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
  activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
-  let renderer,scene,camera,controls,group,atlas,parts=[],meshes=[],pickers=[],materials=[]
+  let renderer,scene,camera,controls,group,detailedGroup,atlas,parts=[],meshes=[],detailedMeshes=[],pickers=[],materials=[],detailedParts=[]
   const init=async()=>{
    try{
     atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
-    onCatalog?.(parts)
+    let detailed=null
+    try{detailed=await loadDetailedMuscles()}catch(_){detailed=null}
+    if(disposed)return
+    if(detailed){
+     detailedParts=detailed.mapping.map((p,i)=>({
+      id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
+      name:p.name||p.originalName||`Músculo ${i+1}`,
+      originalName:p.originalName||p.name||'',
+      system:'muscular',
+      source:'Z-Anatomy / BodyExplorer',
+      isTendon:!!p.isTendon,
+      fmaId:p.fmaId||'',
+      bpId:p.bpId||''
+     }))
+    }
+    onCatalog?.([...detailedParts,...parts])
     scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
     camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
     const mobile=window.matchMedia('(max-width: 650px)').matches
@@ -75,6 +103,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     const fill=new THREE.DirectionalLight(0xffc3d8,1.05);fill.position.set(-4,2,3);scene.add(fill)
     const rim=new THREE.DirectionalLight(0x8ca9d8,1.35);rim.position.set(-4,3,-4);scene.add(rim)
     group=new THREE.Group();scene.add(group)
+    detailedGroup=new THREE.Group();scene.add(detailedGroup)
     const realisticColors={
      skeletal:0xe7dcc8,muscular:0xa9443f,cardiac:0xb52f3d,arterial:0xc73b3f,
      venous:0x416fa3,nervous:0xd3a84f,respiratory:0xc98b92,digestive:0xb56e54,
@@ -143,6 +172,36 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      })
      loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
     }
+    if(detailed){
+     detailed.gltf.scene.traverse(node=>{
+      if(!node.isMesh)return
+      const idx=detailedMeshes.length
+      const meta=detailedParts[idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
+      const source=node
+      const geometry=source.geometry.clone()
+      const material=new THREE.MeshPhysicalMaterial({
+       color:meta.isTendon?0xe2c8b4:0xb83f45,
+       roughness:meta.isTendon?.62:.58,
+       metalness:0,
+       clearcoat:.12,
+       clearcoatRoughness:.7,
+       sheen:.18,
+       sheenColor:new THREE.Color(0x64121d),
+       side:THREE.DoubleSide
+      })
+      const mesh=new THREE.Mesh(geometry,material)
+      mesh.name=meta.name
+      mesh.userData={system:'muscular',detailIndex:idx,part:meta,isDetailedMuscle:true}
+      mesh.castShadow=false
+      mesh.receiveShadow=true
+      detailedGroup.add(mesh)
+      detailedMeshes.push(mesh)
+      materials.push(material)
+     })
+     detailedGroup.updateMatrixWorld(true)
+     const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
+     atlasMuscle.forEach(m=>m.visible=false)
+    }
     const bounds=new THREE.Box3().setFromObject(group)
     const center=bounds.getCenter(new THREE.Vector3())
     const sphere=bounds.getBoundingSphere(new THREE.Sphere())
@@ -157,16 +216,22 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     controls.minDistance=Math.max(radius*.08,.05)
     controls.maxDistance=Math.max(radius*8,10)
     controls.update()
-    modelRef.current={atlas,parts,camera,controls,group,meshes}
+    modelRef.current={atlas,parts,detailedParts,camera,controls,group,detailedGroup,meshes,detailedMeshes}
     const ray=new THREE.Raycaster(),mouse=new THREE.Vector2()
+    const selectable=[...meshes,...detailedMeshes]
     const click=e=>{
      const r=renderer.domElement.getBoundingClientRect()
      mouse.x=(e.clientX-r.left)/r.width*2-1
      mouse.y=-(e.clientY-r.top)/r.height*2+1
      ray.setFromCamera(mouse,camera)
-     const hits=ray.intersectObjects(meshes,false)
+     const hits=ray.intersectObjects(selectable,false)
      if(!hits.length)return
      const hit=hits[0]
+     if(hit.object.userData.isDetailedMuscle){
+      const p=hit.object.userData.part
+      if(p)onSelect(p)
+      return
+     }
      const geometry=hit.object.geometry
      const indexAttr=geometry.getAttribute('partIndex')
      if(!indexAttr || hit.faceIndex==null)return
@@ -202,10 +267,23 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
        const system=mesh.userData.system
        const systemVisible=!!activeRef.current[system]
        let visible=systemVisible
-       if(isolateRef.current && selectedRef.current) visible=systemVisible && system===selectedRef.current.system
+       if(system==='muscular' && detailedMeshes.length) visible=false
+       if(isolateRef.current && selectedRef.current) visible=systemVisible && system===selectedRef.current.system && visible
        mesh.visible=visible
        mesh.material.transparent=!!transparentRef.current
        mesh.material.opacity=transparentRef.current?.52:1
+      })
+      detailedMeshes.forEach(mesh=>{
+       const systemVisible=!!activeRef.current.muscular
+       let visible=systemVisible
+       if(isolateRef.current && selectedRef.current) visible=systemVisible && selectedRef.current.system==='muscular'
+       const idx=mesh.userData.detailIndex
+       const selectedIndex=selectedRef.current?detailedParts.findIndex(p=>p.id===selectedRef.current.id):-1
+       mesh.visible=visible
+       mesh.material.transparent=!!transparentRef.current
+       mesh.material.opacity=transparentRef.current?.52:1
+       mesh.material.emissive.set(idx===selectedIndex?0x7a1630:0x000000)
+       mesh.material.emissiveIntensity=idx===selectedIndex?.62:0
       })
       const currentView=viewRef.current
       if(currentView!==appliedView)setViewPosition(currentView)
@@ -218,7 +296,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
    }catch(e){if(!disposed)setError(e instanceof Error?e.message:'No se pudo cargar el modelo anatómico.')}
   }
   init()
-  return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());materials.forEach(m=>m.dispose())}
+  return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());detailedMeshes.forEach(m=>m.geometry.dispose());materials.forEach(m=>m.dispose())}
  },[])
  useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0}},[resetToken])
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
@@ -226,10 +304,10 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
 export default function App(){
  const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[search,setSearch]=useState(''),[catalog,setCatalog]=useState([]),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0),[isolate,setIsolate]=useState(false),[explode,setExplode]=useState(false)
  const toggle=id=>setActive(a=>({...a,[id]:!a[id]}))
- const matches=search.trim()?catalog.filter(p=>p.name?.toLowerCase().includes(search.trim().toLowerCase())).slice(0,8):[]
+ const matches=search.trim()?catalog.filter(p=>p.name?.toLowerCase().includes(search.trim().toLowerCase())).slice(0,12):[]
  const chooseSearch=p=>{setSelected(p);setSearch(p.name||'');setActive(a=>({...a,[p.system]:true}))}
  return <div className="app">
-  <header><div><div className="eyebrow">ANATOMÍA 3D · ATLAS PERSONAL</div><h1>Atlas humano interactivo</h1><p>Modelo anatómico real basado en BodyParts3D 4.0.</p></div><div className="header-actions"><button onClick={()=>setStudy(!study)} className={study?'primary':''}>Modo estudio</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button><span className="badge">{progress<100?'CARGANDO '+progress+'%':'MODELO 3D CARGADO'}</span></div></header>
+  <header><div><div className="eyebrow">ANATOMÍA 3D · ATLAS PERSONAL</div><h1>Atlas humano interactivo</h1><p>Modelo anatómico 3D detallado con capa muscular profunda y superficial.</p></div><div className="header-actions"><button onClick={()=>setStudy(!study)} className={study?'primary':''}>Modo estudio</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button><span className="badge">{progress<100?'CARGANDO '+progress+'%':'MODELO 3D CARGADO'}</span></div></header>
   <main>
    <aside className="left panel"><div className="panel-title">Sistemas anatómicos</div><div className="search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar estructura..."/></div><div className="search-hint">{catalog.length?`Catálogo real · ${catalog.length.toLocaleString("es-CO")} estructuras`:"Cargando catálogo..."}</div>{matches.length>0&&<div className="search-results">{matches.map(p=><button key={p.id} onClick={()=>chooseSearch(p)}><strong>{p.name}</strong><span>{systemMap[p.system]?.name||p.system}</span></button>)}</div>}
    <div className="systems"><button className="system active" onClick={()=>setActive(Object.fromEntries(systems.map(s=>[s.id,s.id==='muscular'])))}><span className="icon">💪</span><span>Solo músculos</span><i/></button>{systems.map(s=><button className={active[s.id]?'system active':'system'} key={s.id} onClick={()=>toggle(s.id)}><span className="icon">{s.icon}</span><span>{s.name}</span><i/></button>)}</div>
