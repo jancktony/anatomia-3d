@@ -74,6 +74,25 @@ const regionalSections=[
   {id:'organs',name:'Órganos',desc:'Principales órganos y cavidades'}
  ]}
 ]
+
+const spanishNames={
+ 'pectoralis major':'Pectoral mayor','pectoralis minor':'Pectoral menor','deltoid':'Deltoides','trapezius':'Trapecio','latissimus dorsi':'Dorsal ancho','rectus abdominis':'Recto abdominal','external oblique':'Oblicuo externo','internal oblique':'Oblicuo interno','transversus abdominis':'Transverso del abdomen','biceps brachii':'Bíceps braquial','triceps brachii':'Tríceps braquial','brachialis':'Braquial','brachioradialis':'Braquiorradial','gluteus maximus':'Glúteo mayor','gluteus medius':'Glúteo medio','gluteus minimus':'Glúteo menor','quadriceps femoris':'Cuádriceps femoral','rectus femoris':'Recto femoral','vastus lateralis':'Vasto lateral','vastus medialis':'Vasto medial','gastrocnemius':'Gastrocnemio','soleus':'Sóleo','tibialis anterior':'Tibial anterior','hamstring':'Isquiotibiales','sternocleidomastoid':'Esternocleidomastoideo','masseter':'Masetero','temporalis':'Temporal','orbicularis oculi':'Orbicular de los ojos','orbicularis oris':'Orbicular de la boca','zygomaticus major':'Cigomático mayor','frontalis':'Frontal','skull':'Cráneo','femur':'Fémur','tibia':'Tibia','fibula':'Fíbula','humerus':'Húmero','radius':'Radio','ulna':'Ulna','scapula':'Escápula','clavicle':'Clavícula','sternum':'Esternón','patella':'Rótula','pelvis':'Pelvis','sacrum':'Sacro','mandible':'Mandíbula','maxilla':'Maxilar'
+}
+function spanishAnatomyName(name){
+ const raw=String(name||'').replace(/_/g,' ').trim(),key=raw.toLowerCase()
+ return spanishNames[key]||raw.replace(/\\b(major|minor|muscle|bone|left|right)\\b/gi,m=>({major:'mayor',minor:'menor',muscle:'músculo',bone:'hueso',left:'izquierdo',right:'derecho'}[m.toLowerCase()]||m))
+}
+function anatomyDescription(name,system){
+ const n=String(name||'').toLowerCase()
+ const common=systemMap[system]?.name||'Estructura anatómica'
+ if(n.includes('muscle')||system==='muscular')return 'Músculo que participa en el movimiento y la estabilidad de la región anatómica correspondiente.'
+ if(n.includes('bone')||system==='skeletal')return 'Estructura ósea que proporciona soporte, protección y puntos de inserción para músculos y ligamentos.'
+ if(system==='arterial')return 'Vaso arterial que transporta sangre desde el corazón hacia los tejidos.'
+ if(system==='venous')return 'Vaso venoso que devuelve la sangre desde los tejidos hacia el corazón.'
+ if(system==='nervous')return 'Estructura nerviosa relacionada con la transmisión de información sensitiva y motora.'
+ return explain(spanishAnatomyName(name),system)||common+'.'
+}
+
 function explain(name,system){
  const n=name.toLowerCase()
  const facts={'heart':'Bomba muscular de cuatro cavidades que impulsa la sangre por las circulaciones pulmonar y sistémica.','liver':'Órgano metabólico que procesa nutrientes, produce bilis y sintetiza numerosas proteínas plasmáticas.','brain':'Órgano central del sistema nervioso que integra información y participa en percepción, movimiento y regulación corporal.','stomach':'Cámara muscular que almacena y mezcla el alimento e inicia su digestión química.','spleen':'Órgano linfoide que filtra la sangre y participa en la respuesta inmunitaria.','pancreas':'Órgano con funciones digestivas y endocrinas; produce enzimas y hormonas como insulina y glucagón.','urinary bladder':'Reservorio muscular que almacena temporalmente la orina.','trachea':'Conducto respiratorio que conecta la laringe con los bronquios y mantiene abierta la vía aérea.','diaphragm':'Músculo que separa tórax y abdomen y participa de forma principal en la inspiración.'}
@@ -261,7 +280,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const hit=hits[0]
      if(hit.object.userData.isDetailedMuscle){
       const p=hit.object.userData.part
-      if(p)onSelect(p)
+      if(p)onSelect({...p,name:spanishAnatomyName(p.name),originalName:p.originalName||p.name,description:p.description||anatomyDescription(p.name,p.system)})
       return
      }
      const geometry=hit.object.geometry
@@ -269,7 +288,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      if(!indexAttr || hit.faceIndex==null)return
      const a=geometry.index ? geometry.index.getX(hit.faceIndex*3) : hit.faceIndex*3
      const partIndex=Math.round(indexAttr.getX(a))
-     if(parts[partIndex])onSelect(parts[partIndex])
+     if(parts[partIndex]){const p=parts[partIndex];onSelect({...p,name:spanishAnatomyName(p.name),originalName:p.name,description:anatomyDescription(p.name,p.system)})}
     }
     renderer.domElement.addEventListener('click',click)
     const resize=()=>{camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight)}
@@ -411,7 +430,8 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       const key=normalizeName(node.name)
       const queue=mappingQueues.get(key)||[]
       const raw=queue.length?queue.shift():rawMapping[idx]
-      const meta=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
+      const meta0=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
+      const meta={...meta0,name:spanishAnatomyName(meta0.name),originalName:meta0.name,description:anatomyDescription(meta0.name,meta0.system)}
       const geometry=node.geometry.clone()
       transformDetailedGeometry(geometry)
       const material=new THREE.MeshPhysicalMaterial({
@@ -494,7 +514,7 @@ export default function App(){
  const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[region,setRegion]=useState('full'),[search,setSearch]=useState(''),[catalog,setCatalog]=useState([]),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0),[isolate,setIsolate]=useState(false),[explode,setExplode]=useState(false),[navMode,setNavMode]=useState('regions'),[expandedRegion,setExpandedRegion]=useState('full'),[selectedSubregion,setSelectedSubregion]=useState(null)
  const toggle=id=>setActive(a=>({...a,[id]:!a[id]}))
  const matches=search.trim()?catalog.filter(p=>p.name?.toLowerCase().includes(search.trim().toLowerCase())).slice(0,12):[]
- const chooseSearch=p=>{setSelected(p);setSearch(p.name||'');setActive(a=>({...a,[p.system]:true}))}
+ const chooseSearch=p=>{const item={...p,name:spanishAnatomyName(p.name),originalName:p.originalName||p.name,description:p.description||anatomyDescription(p.name,p.system)};setSelected(item);setSearch(item.name||'');setActive(a=>({...a,[item.system]:true}))}
  const chooseRegion=(section,child=null)=>{
   setRegion(section.id);setExpandedRegion(section.id);setSelectedSubregion(child?.id||null)
   if(section.id==='head'&&child?.id==='face')setActive(a=>({...a,muscular:true,skeletal:false}))
@@ -555,7 +575,7 @@ export default function App(){
    </section>
    <aside className="sidebar detail-sidebar">
     {matches.length>0&&<div className="search-popover"><div className="section-label">RESULTADOS</div>{matches.map(p=><button key={p.id} onClick={()=>chooseSearch(p)}><strong>{p.name}</strong><small>{systemMap[p.system]?.name||p.system}</small></button>)}</div>}
-    {study?<div className="detail-content"><div className="eyebrow">MODO ESTUDIO</div><h2>Identifica la estructura</h2><p>Selecciona una estructura directamente en el modelo.</p><div className="study-card">{selected?<><strong>{selected.name}</strong><span>{systemMap[selected.system]?.name}</span><small>{explain(selected.name,selected.system)}</small></>:<strong>Selecciona una estructura</strong>}</div></div>:selected?<div className="detail-content"><div className="structure-head"><span className="structure-pill">{systemMap[selected.system]?.name}</span><button onClick={()=>setSelected(null)}>×</button></div><h1>{selected.name}</h1><p className="latin">{selected.originalName||'Estructura anatómica'}</p><div className="detail-actions"><button className="primary" onClick={()=>setIsolate(true)}>Aislar</button><button onClick={()=>setIsolate(false)}>Mostrar todo</button></div><div className="info-card"><small>FUNCIÓN / REFERENCIA</small><p>{explain(selected.name,selected.system)}</p></div><div className="info-card"><small>SISTEMA</small><p>{systemMap[selected.system]?.name}</p></div></div>:<div className="detail-content welcome"><div className="welcome-icon">✦</div><div className="eyebrow">ATLAS 3D</div><h2>Explora el cuerpo humano</h2><p>Selecciona una región, activa un sistema y toca cualquier estructura para conocerla.</p><div className="feature-row"><span>01</span><b>Regiones</b></div><div className="feature-row"><span>02</span><b>Capas anatómicas</b></div><div className="feature-row"><span>03</span><b>Selección individual</b></div></div>}
+    {study?<div className="detail-content"><div className="eyebrow">MODO ESTUDIO</div><h2>Identifica la estructura</h2><p>Selecciona una estructura directamente en el modelo.</p><div className="study-card">{selected?<><strong>{selected.name}</strong><span>{systemMap[selected.system]?.name}</span><small>{explain(selected.name,selected.system)}</small></>:<strong>Selecciona una estructura</strong>}</div></div>:selected?<div className="detail-content"><div className="structure-head"><span className="structure-pill">{systemMap[selected.system]?.name}</span><button onClick={()=>setSelected(null)}>×</button></div><h1>{selected.name}</h1><p className="latin">{selected.originalName||'Nombre anatómico'}</p><div className="detail-actions"><button className="primary" onClick={()=>setIsolate(true)}>Aislar</button><button onClick={()=>setIsolate(false)}>Mostrar todo</button></div><div className="info-card"><small>FUNCIÓN / REFERENCIA</small><p>{selected.description||anatomyDescription(selected.name,selected.system)}</p></div><div className="info-card"><small>SISTEMA</small><p>{systemMap[selected.system]?.name}</p></div></div>:<div className="detail-content welcome"><div className="welcome-icon">✦</div><div className="eyebrow">ATLAS 3D</div><h2>Explora el cuerpo humano</h2><p>Selecciona una región, activa un sistema y toca cualquier estructura para conocerla.</p><div className="feature-row"><span>01</span><b>Regiones</b></div><div className="feature-row"><span>02</span><b>Capas anatómicas</b></div><div className="feature-row"><span>03</span><b>Selección individual</b></div></div>}
    </aside>
   </div>
   <footer className="atlas-footer"><span>Anatomía 3D</span><span>Modelo educativo independiente · {MODEL_SOURCE}</span><span>{catalog.length.toLocaleString('es-CO')} estructuras catalogadas</span></footer>
