@@ -1,4 +1,4 @@
-const VERSION='v5';
+const VERSION='v6';
 const CACHE='anatomia-3d-'+VERSION;
 const APP_SHELL=['./','./index.html','./manifest.webmanifest'];
 
