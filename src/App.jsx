@@ -168,94 +168,6 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      })
      loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
     }
-    if(detailed){
-     const sourceRoot=detailed.gltf.scene
-     const sourceBox=new THREE.Box3().setFromObject(sourceRoot)
-     const sourceCenter=sourceBox.getCenter(new THREE.Vector3())
-     const sourceSize=sourceBox.getSize(new THREE.Vector3())
-     const sourceScale=30/Math.max(sourceSize.z,1)
-     const transformDetailedGeometry=geometry=>{
-      const pos=geometry.getAttribute('position')
-      const normal=geometry.getAttribute('normal')
-      if(pos){
-       const a=pos.array
-       for(let i=0;i<a.length;i+=3){
-        const x=a[i],y=a[i+1],z=a[i+2]
-        a[i]=(x-sourceCenter.x)*sourceScale
-        a[i+1]=(z-sourceCenter.z)*sourceScale
-        a[i+2]=-(y-sourceCenter.y)*sourceScale
-       }
-       pos.needsUpdate=true
-      }
-      if(normal){
-       const a=normal.array
-       for(let i=0;i<a.length;i+=3){
-        const x=a[i],y=a[i+1],z=a[i+2]
-        a[i]=x
-        a[i+1]=z
-        a[i+2]=-y
-       }
-       normal.needsUpdate=true
-      }
-      geometry.computeBoundingBox();geometry.computeBoundingSphere()
-     }
-     const rawMapping=detailed.mapping||[]
-     const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\s+/g,' ').trim()
-     const mappingQueues=new Map()
-     rawMapping.forEach((entry,i)=>{
-      const key=normalizeName(entry.name||entry.originalName)
-      const queue=mappingQueues.get(key)||[]
-      queue.push({...entry,_sourceIndex:i})
-      mappingQueues.set(key,queue)
-     })
-     detailed.gltf.scene.traverse(node=>{
-      if(!node.isMesh)return
-      const idx=detailedMeshes.length
-      const key=normalizeName(node.name)
-      const queue=mappingQueues.get(key)||[]
-      const raw=queue.length?queue.shift():rawMapping[idx]
-      const meta=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
-      const geometry=node.geometry.clone()
-      transformDetailedGeometry(geometry)
-      const material=new THREE.MeshPhysicalMaterial({
-       color:meta.isTendon?0xe2c8b4:0xb83f45,
-       roughness:meta.isTendon?.62:.58,
-       metalness:0,
-       clearcoat:.12,
-       clearcoatRoughness:.7,
-       sheen:.18,
-       sheenColor:new THREE.Color(0x64121d),
-       side:THREE.DoubleSide
-      })
-      const mesh=new THREE.Mesh(geometry,material)
-      mesh.name=meta.name
-      mesh.userData={system:'muscular',detailIndex:idx,part:meta,isDetailedMuscle:true}
-      mesh.castShadow=false
-      mesh.receiveShadow=true
-      detailedGroup.add(mesh)
-      detailedMeshes.push(mesh)
-      materials.push(material)
-     })
-     detailedGroup.updateMatrixWorld(true)
-     if(detailedSkeleton){
-      detailedSkeleton.scene.traverse(node=>{
-       if(!node.isMesh)return
-       const geometry=node.geometry.clone()
-       transformDetailedGeometry(geometry)
-       const material=new THREE.MeshPhysicalMaterial({
-        color:0xe6dcc9,roughness:.7,metalness:0,clearcoat:.08,
-        clearcoatRoughness:.78,side:THREE.DoubleSide,
-        transparent:true,opacity:.86,depthWrite:true
-       })
-       const mesh=new THREE.Mesh(geometry,material)
-       mesh.name=node.name||'Hueso'
-       mesh.userData={system:'skeletal',isDetailedSkeleton:true}
-       detailedGroup.add(mesh);detailedMeshes.push(mesh);materials.push(material)
-      })
-     }
-     const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
-     atlasMuscle.forEach(m=>m.visible=false)
-    }
     const atlasBounds=new THREE.Box3().setFromObject(group)
     const center=atlasBounds.getCenter(new THREE.Vector3())
     const bounds=new THREE.Box3().setFromObject(group)
@@ -356,6 +268,93 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      detailed=pair[0];detailedSkeleton=pair[1]
      if(!detailed)return
 
+     const sourceRoot=detailed.gltf.scene
+     const sourceBox=new THREE.Box3().setFromObject(sourceRoot)
+     const sourceCenter=sourceBox.getCenter(new THREE.Vector3())
+     const sourceSize=sourceBox.getSize(new THREE.Vector3())
+     const sourceScale=30/Math.max(sourceSize.z,1)
+     const transformDetailedGeometry=geometry=>{
+      const pos=geometry.getAttribute('position')
+      const normal=geometry.getAttribute('normal')
+      if(pos){
+       const a=pos.array
+       for(let i=0;i<a.length;i+=3){
+        const x=a[i],y=a[i+1],z=a[i+2]
+        a[i]=(x-sourceCenter.x)*sourceScale
+        a[i+1]=(z-sourceCenter.z)*sourceScale
+        a[i+2]=-(y-sourceCenter.y)*sourceScale
+       }
+       pos.needsUpdate=true
+      }
+      if(normal){
+       const a=normal.array
+       for(let i=0;i<a.length;i+=3){
+        const x=a[i],y=a[i+1],z=a[i+2]
+        a[i]=x
+        a[i+1]=z
+        a[i+2]=-y
+       }
+       normal.needsUpdate=true
+      }
+      geometry.computeBoundingBox();geometry.computeBoundingSphere()
+     }
+     const rawMapping=detailed.mapping||[]
+     const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\s+/g,' ').trim()
+     const mappingQueues=new Map()
+     rawMapping.forEach((entry,i)=>{
+      const key=normalizeName(entry.name||entry.originalName)
+      const queue=mappingQueues.get(key)||[]
+      queue.push({...entry,_sourceIndex:i})
+      mappingQueues.set(key,queue)
+     })
+     detailed.gltf.scene.traverse(node=>{
+      if(!node.isMesh)return
+      const idx=detailedMeshes.length
+      const key=normalizeName(node.name)
+      const queue=mappingQueues.get(key)||[]
+      const raw=queue.length?queue.shift():rawMapping[idx]
+      const meta=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
+      const geometry=node.geometry.clone()
+      transformDetailedGeometry(geometry)
+      const material=new THREE.MeshPhysicalMaterial({
+       color:meta.isTendon?0xe2c8b4:0xb83f45,
+       roughness:meta.isTendon?.62:.58,
+       metalness:0,
+       clearcoat:.12,
+       clearcoatRoughness:.7,
+       sheen:.18,
+       sheenColor:new THREE.Color(0x64121d),
+       side:THREE.DoubleSide
+      })
+      const mesh=new THREE.Mesh(geometry,material)
+      mesh.name=meta.name
+      mesh.userData={system:'muscular',detailIndex:idx,part:meta,isDetailedMuscle:true}
+      mesh.castShadow=false
+      mesh.receiveShadow=true
+      detailedGroup.add(mesh)
+      detailedMeshes.push(mesh)
+      materials.push(material)
+     })
+     detailedGroup.updateMatrixWorld(true)
+     if(detailedSkeleton){
+      detailedSkeleton.scene.traverse(node=>{
+       if(!node.isMesh)return
+       const geometry=node.geometry.clone()
+       transformDetailedGeometry(geometry)
+       const material=new THREE.MeshPhysicalMaterial({
+        color:0xe6dcc9,roughness:.7,metalness:0,clearcoat:.08,
+        clearcoatRoughness:.78,side:THREE.DoubleSide,
+        transparent:true,opacity:.86,depthWrite:true
+       })
+       const mesh=new THREE.Mesh(geometry,material)
+       mesh.name=node.name||'Hueso'
+       mesh.userData={system:'skeletal',isDetailedSkeleton:true}
+       detailedGroup.add(mesh);detailedMeshes.push(mesh);materials.push(material)
+      })
+     }
+     const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
+     atlasMuscle.forEach(m=>m.visible=false)
+
      detailedParts=detailed.mapping.map((p,i)=>({
       id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
       name:p.name||p.originalName||`Músculo ${i+1}`,
@@ -367,8 +366,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       bpId:p.bpId||''
      }))
     
-     onCatalog?.([...detailedParts,...parts])
-     const detailedBounds=new THREE.Box3().setFromObject(detailedGroup)
+      const detailedBounds=new THREE.Box3().setFromObject(detailedGroup)
      const detailedCenter=detailedBounds.getCenter(new THREE.Vector3())
      detailedGroup.position.copy(center).sub(detailedCenter)
      detailedGroup.updateMatrixWorld(true)
