@@ -68,7 +68,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
     renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})
     renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
-    controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.target.set(0,.85,0);controls.minDistance=.08;controls.maxDistance=30
+    controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.enableZoom=true;controls.zoomToCursor=true;controls.screenSpacePanning=false;controls.target.set(0,.85,0);controls.minDistance=.08;controls.maxDistance=30
     scene.add(new THREE.HemisphereLight(0xffffff,0x172033,1.9))
     const key=new THREE.DirectionalLight(0xffffff,2.8);key.position.set(3,5,4);scene.add(key)
     const rim=new THREE.DirectionalLight(0x759bc0,1.5);rim.position.set(-4,2,-4);scene.add(rim)
@@ -114,6 +114,14 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     renderer.domElement.addEventListener('click',click)
     const resize=()=>{camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight)}
     window.addEventListener('resize',resize)
+    let appliedView='front'
+    const setViewPosition=which=>{
+     const v=which==='back'?[0,1,-4.2]:which==='left'?[-4.2,1,0]:which==='right'?[4.2,1,0]:[0,1,4.2]
+     camera.position.set(...v)
+     controls.target.set(0,.85,0)
+     controls.update()
+     appliedView=which
+    }
     const animate=()=>{
      if(disposed)return;frame=requestAnimationFrame(animate)
      const st=modelRef.current
@@ -127,8 +135,8 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
        mesh.material.transparent=!!transparentRef.current
        mesh.material.opacity=transparentRef.current?.52:1
       })
-      const currentView=viewRef.current;const v=currentView==='back'?[0,1,-4.2]:currentView==='left'?[-4.2,1,0]:currentView==='right'?[4.2,1,0]:[0,1,4.2]
-      camera.position.lerp(new THREE.Vector3(...v),.08);controls.target.set(0,.85,0)
+      const currentView=viewRef.current
+      if(currentView!==appliedView)setViewPosition(currentView)
       group.rotation.y=autoRotateRef.current?group.rotation.y+.0018:group.rotation.y
       controls.update();renderer.render(scene,camera)
      }
