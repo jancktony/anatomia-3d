@@ -42,6 +42,7 @@ jobs:
         run: |
           curl -L --fail --retry 3 -o public/models/detailed-muscles.glb https://raw.githubusercontent.com/JohanBellander/BodyExplorer/main/public/anatomy.glb
           curl -L --fail --retry 3 -o public/models/detailed-muscles.json https://raw.githubusercontent.com/JohanBellander/BodyExplorer/main/public/mesh_mapping.json
+          curl -L --fail --retry 3 -o public/models/detailed-skeleton.glb https://raw.githubusercontent.com/JohanBellander/BodyExplorer/main/public/skeleton.glb
 
       - name: Install dependencies
         run: npm install
