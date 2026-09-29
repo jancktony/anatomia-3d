@@ -3,7 +3,10 @@ import * as THREE from 'three'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-const MODEL_BASE='https://raw.githubusercontent.com/ashemag/human-atlas/main/public/models/'
+const MODEL_BASES=[
+ 'https://cdn.jsdelivr.net/gh/ashemag/human-atlas@main/public/models/',
+ 'https://raw.githubusercontent.com/ashemag/human-atlas/main/public/models/'
+]
 const MODEL_SOURCE='BodyParts3D 4.0 · CC BY 4.0'
 
 const systems=[
@@ -21,11 +24,26 @@ function explain(name,system){
  const facts={'heart':'Bomba muscular de cuatro cavidades que impulsa la sangre por las circulaciones pulmonar y sistémica.','liver':'Órgano metabólico que procesa nutrientes, produce bilis y sintetiza numerosas proteínas plasmáticas.','brain':'Órgano central del sistema nervioso que integra información y participa en percepción, movimiento y regulación corporal.','stomach':'Cámara muscular que almacena y mezcla el alimento e inicia su digestión química.','spleen':'Órgano linfoide que filtra la sangre y participa en la respuesta inmunitaria.','pancreas':'Órgano con funciones digestivas y endocrinas; produce enzimas y hormonas como insulina y glucagón.','urinary bladder':'Reservorio muscular que almacena temporalmente la orina.','trachea':'Conducto respiratorio que conecta la laringe con los bronquios y mantiene abierta la vía aérea.','diaphragm':'Músculo que separa tórax y abdomen y participa de forma principal en la inspiración.'}
  return facts[n]||systemMap[system]?.name||'Estructura anatómica del cuerpo humano.'
 }
+async function fetchFirst(urls){
+ let lastError=null
+ for(const url of urls){
+  try{
+   const res=await fetch(url,{cache:'no-store'})
+   if(res.ok)return res
+   lastError=new Error(`HTTP ${res.status}`)
+  }catch(e){lastError=e}
+ }
+ throw lastError||new Error('No se pudo descargar el recurso anatómico.')
+}
 async function loadAtlas(){
- const res=await fetch(MODEL_BASE+'atlas.json');if(!res.ok)throw new Error('No se pudo cargar el catálogo anatómico.')
+ const res=await fetchFirst(MODEL_BASES.map(base=>base+'atlas.json'))
  const atlas=await res.json()
  atlas.parts=atlas.parts||[]
- atlas.chunks=(atlas.chunks||[]).map(c=>({...c,url:c.url?new URL(c.url,MODEL_BASE).href:null,gzip:c.gzip?new URL(c.gzip,MODEL_BASE).href:null}))
+ atlas.chunks=(atlas.chunks||[]).map(c=>({
+  ...c,
+  urls:MODEL_BASES.map(base=>c.url?new URL(c.url,base).href:null).filter(Boolean),
+  gzipUrls:MODEL_BASES.map(base=>c.gzip?new URL(c.gzip,base).href:null).filter(Boolean)
+ }))
  return atlas
 }
 async function decode(response,expected,compressed){
@@ -74,8 +92,9 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     const mats=new Map(systems.map(s=>[s.id,makeMaterial(s.id)]))
     let loaded=0
     for(let ci=0;ci<atlas.chunks.length;ci++){
-     const c=atlas.chunks[ci],compressed=!!c.gzip&&typeof DecompressionStream!=='undefined'
-     const response=await fetch(compressed?c.gzip:c.url),buffer=await decode(response,c.bytes,compressed),groups=new Map()
+     const c=atlas.chunks[ci],compressed=!!c.gzipUrls?.length&&typeof DecompressionStream!=='undefined'
+     const urls=compressed?c.gzipUrls:c.urls
+     const response=await fetchFirst(urls),buffer=await decode(response,c.bytes,compressed),groups=new Map()
      parts.forEach((p,i)=>{
       if(p.chunk!==ci)return
       const g=new THREE.BufferGeometry()
