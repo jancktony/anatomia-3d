@@ -188,7 +188,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     renderer.toneMappingExposure=1.08
     renderer.physicallyCorrectLights=true
     renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.25:1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
-    controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.enableZoom=true;controls.zoomToCursor=true;controls.screenSpacePanning=false;controls.target.set(0,.85,0);controls.minDistance=.08;controls.maxDistance=30
+    controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.12;controls.enableZoom=true;controls.zoomToCursor=true;controls.enablePan=false;controls.screenSpacePanning=false;controls.rotateSpeed=0.62;controls.zoomSpeed=0.72;controls.target.set(0,.85,0);controls.minDistance=.5;controls.maxDistance=12
     scene.add(new THREE.HemisphereLight(0xfff7fa,0x20151a,1.55))
     const key=new THREE.DirectionalLight(0xfff8f4,4.2);key.position.set(4,6,5);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.near=.1;key.shadow.camera.far=30;key.shadow.bias=-.0003;scene.add(key)
     const fill=new THREE.DirectionalLight(0xffd4df,1.25);fill.position.set(-4,2,4);scene.add(fill)
@@ -289,8 +289,8 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     camera.near=Math.max(.01,radius/1000)
     camera.far=Math.max(100,radius*8)
     camera.updateProjectionMatrix()
-    controls.minDistance=Math.max(radius*.08,.05)
-    controls.maxDistance=Math.max(radius*8,10)
+    controls.minDistance=Math.max(radius*.48,.32)
+    controls.maxDistance=Math.max(radius*4.2,7)
     controls.update()
     modelRef.current={atlas,parts,detailedParts,camera,controls,group,detailedGroup,meshes,detailedMeshes}
     const ray=new THREE.Raycaster(),mouse=new THREE.Vector2()
@@ -395,7 +395,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       if(currentView!==appliedView){setViewPosition(currentView);appliedView=currentView}
       const currentRegion=regionRef.current||'full'
       if(currentRegion!==appliedRegion){if(currentRegion==='full')setViewPosition(currentView);else setRegionFocus(currentRegion);appliedRegion=currentRegion}
-      group.rotation.y=autoRotateRef.current?group.rotation.y+.0018:group.rotation.y
+      if(autoRotateRef.current){const step=.0018;group.rotation.y+=step;detailedGroup.rotation.y+=step}
       updateClip();controls.update();renderer.render(scene,camera)
      }
     }
@@ -468,13 +468,15 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       const geometry=node.geometry.clone()
       transformDetailedGeometry(geometry)
       const material=new THREE.MeshPhysicalMaterial({
-       color:meta.isTendon?0xe2c8b4:0xb83f45,
-       roughness:meta.isTendon?.62:.58,
+       color:meta.isTendon?0xd8b89f:0x8f3034,
+       roughness:meta.isTendon?.66:.7,
        metalness:0,
-       clearcoat:.12,
-       clearcoatRoughness:.7,
-       sheen:.18,
-       sheenColor:new THREE.Color(0x64121d),
+       clearcoat:.08,
+       clearcoatRoughness:.52,
+       sheen:.12,
+       sheenColor:new THREE.Color(0x55141b),
+       specularIntensity:.28,
+       specularColor:new THREE.Color(0xffc8c8),
        side:THREE.DoubleSide
       })
       const mesh=new THREE.Mesh(geometry,material)
