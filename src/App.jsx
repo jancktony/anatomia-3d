@@ -174,7 +174,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     }
     if(detailed){
      const rawMapping=detailed.mapping||[]
-     const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\\s+/g,' ').trim()
+     const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\s+/g,' ').trim()
      const mappingQueues=new Map()
      rawMapping.forEach((entry,i)=>{
       const key=normalizeName(entry.name||entry.originalName)
