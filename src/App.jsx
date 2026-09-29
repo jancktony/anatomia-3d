@@ -66,8 +66,9 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     onCatalog?.(parts)
     scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
     camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
-    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})
-    renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
+    const mobile=window.matchMedia('(max-width: 650px)').matches
+    renderer=new THREE.WebGLRenderer({antialias:!mobile,powerPreference:'high-performance',preserveDrawingBuffer:false})
+    renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.25:1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
     controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.enableZoom=true;controls.zoomToCursor=true;controls.screenSpacePanning=false;controls.target.set(0,.85,0);controls.minDistance=.08;controls.maxDistance=30
     scene.add(new THREE.HemisphereLight(0xfff4f8,0x26131d,2.15))
     const key=new THREE.DirectionalLight(0xfff7fb,3.1);key.position.set(3,5,4);scene.add(key)
@@ -116,7 +117,6 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       g.setIndex(new THREE.BufferAttribute(new Uint32Array(buffer,p.indices,p.indexCount),1))
       g.setAttribute('partIndex',new THREE.BufferAttribute(new Float32Array(p.vertexCount).fill(i),1))
       g.computeBoundingSphere()
-      const picker=new THREE.Mesh(g);picker.visible=false;pickers[i]=picker;group.add(picker)
       const arr=groups.get(p.system)||[];arr.push(g);groups.set(p.system,arr)
      })
      groups.forEach((gs,system)=>{
@@ -131,22 +131,50 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      })
      loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
     }
+    const bounds=new THREE.Box3().setFromObject(group)
+    const center=bounds.getCenter(new THREE.Vector3())
+    const sphere=bounds.getBoundingSphere(new THREE.Sphere())
+    const radius=Math.max(sphere.radius,.5)
+    controls.target.copy(center)
+    const fov=THREE.MathUtils.degToRad(camera.fov)
+    const distance=(radius/Math.tan(fov/2))*1.18
+    camera.position.set(center.x,center.y,center.z+distance)
+    camera.near=Math.max(.01,radius/1000)
+    camera.far=Math.max(100,radius*8)
+    camera.updateProjectionMatrix()
+    controls.minDistance=Math.max(radius*.08,.05)
+    controls.maxDistance=Math.max(radius*8,10)
+    controls.update()
     modelRef.current={atlas,parts,camera,controls,group,meshes}
     const ray=new THREE.Raycaster(),mouse=new THREE.Vector2()
     const click=e=>{
-     const r=renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera)
-     let hit=null,dist=Infinity
-     pickers.forEach((p,i)=>{if(!p)return;const h=ray.intersectObject(p,false)[0];if(h&&h.distance<dist){dist=h.distance;hit=i}})
-     if(hit!==null)onSelect(parts[hit])
+     const r=renderer.domElement.getBoundingClientRect()
+     mouse.x=(e.clientX-r.left)/r.width*2-1
+     mouse.y=-(e.clientY-r.top)/r.height*2+1
+     ray.setFromCamera(mouse,camera)
+     const hits=ray.intersectObjects(meshes,false)
+     if(!hits.length)return
+     const hit=hits[0]
+     const geometry=hit.object.geometry
+     const indexAttr=geometry.getAttribute('partIndex')
+     if(!indexAttr || hit.faceIndex==null)return
+     const a=geometry.index ? geometry.index.getX(hit.faceIndex*3) : hit.faceIndex*3
+     const partIndex=Math.round(indexAttr.getX(a))
+     if(parts[partIndex])onSelect(parts[partIndex])
     }
     renderer.domElement.addEventListener('click',click)
     const resize=()=>{camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight)}
     window.addEventListener('resize',resize)
     let appliedView='front'
     const setViewPosition=which=>{
-     const v=which==='back'?[0,1,-4.2]:which==='left'?[-4.2,1,0]:which==='right'?[4.2,1,0]:[0,1,4.2]
-     camera.position.set(...v)
-     controls.target.set(0,.85,0)
+     const bounds=new THREE.Box3().setFromObject(group)
+     const center=bounds.getCenter(new THREE.Vector3())
+     const sphere=bounds.getBoundingSphere(new THREE.Sphere())
+     const radius=Math.max(sphere.radius,.5)
+     const distance=(radius/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.18
+     const dir=which==='back'?new THREE.Vector3(0,0,-1):which==='left'?new THREE.Vector3(-1,0,0):which==='right'?new THREE.Vector3(1,0,0):new THREE.Vector3(0,0,1)
+     camera.position.copy(center).addScaledVector(dir,distance)
+     controls.target.copy(center)
      controls.update()
      appliedView=which
     }
@@ -174,7 +202,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
    }catch(e){if(!disposed)setError(e instanceof Error?e.message:'No se pudo cargar el modelo anatómico.')}
   }
   init()
-  return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());pickers.forEach(m=>m?.geometry.dispose());materials.forEach(m=>m.dispose())}
+  return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());materials.forEach(m=>m.dispose())}
  },[])
  useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0}},[resetToken])
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
