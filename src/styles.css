@@ -117,3 +117,54 @@ footer{background:#190a12;border-color:#4b2035;color:#967385}
 .search-results{background:#25101c;border-color:#673047}
 .search-results button:hover{background:#4a1c33}
 @media(max-width:650px){.left{background:#210d18f5;border-color:#71344e}.viewbar{background:#1b0b14ee}}
+
+
+/* Tema rosa suave y llamativo */
+:root{color-scheme:dark}
+body{background:#fff4f8;color:#4a2635}
+.app{background:radial-gradient(circle at 50% 25%,#ffe6f0 0,#ffd5e4 38%,#f9c3d8 72%,#f5b7cf 100%);color:#4a2635}
+header{background:rgba(255,247,250,.94);border-color:#f0bfd1;box-shadow:0 4px 22px rgba(176,76,112,.12)}
+.panel{background:rgba(255,247,250,.91);border-color:#efc2d3}
+.viewer{background:radial-gradient(circle at 50% 42%,#fff4f8 0,#ffe4ee 58%,#f8c8da 100%)}
+h1{color:#5a2940}
+.eyebrow,.kicker{color:#c44f7d}
+.app p{color:#93677a}
+.header-actions button{background:#fff0f5;border-color:#e9b2c8;color:#704258}
+.header-actions .primary,.primary{background:linear-gradient(135deg,#e66b9a,#cf4d80);border-color:#ef91b3;color:white;box-shadow:0 7px 20px rgba(207,77,128,.22)}
+.badge{border-color:#e8b2c7;color:#b74b76;background:#fff0f5}
+.panel-title{color:#8e6073}
+.search{background:#fff5f8;border-color:#e7b8ca}
+.search span{color:#c47796}
+.search input{color:#5b3043}
+.search input::placeholder{color:#b992a3}
+.search:focus-within{border-color:#df709c;box-shadow:0 0 0 3px rgba(223,112,156,.14)}
+.system{color:#80576a}
+.system:hover{background:#ffe7f0}
+.system.active{background:linear-gradient(90deg,#ffd8e6,#ffcadc);border-color:#e686aa;color:#71334e}
+.system.active i{background:#df5f91;box-shadow:0 0 9px rgba(223,95,145,.5)}
+.system i{background:#d7adbd}
+.tip{border-color:#ecc4d3;color:#a07788}
+.tip strong{color:#87566b}
+.tip input{accent-color:#df5f91}
+.viewbar{background:rgba(255,247,250,.94);border-color:#e6b4c8;box-shadow:0 7px 25px rgba(176,76,112,.12)}
+.viewbar button{color:#9a6b7e}
+.viewbar button.selected{background:#f2a2bd;color:#6d304a}
+.viewer-label{background:rgba(255,247,250,.9);border-color:#e7b6c9;color:#956a7d}
+.dot{background:#6ac99a}
+.right p{color:#93677a}
+.right .tag{color:#b64070;background:#ffe8f1;border-color:#e8a8bf}
+.facts div,.study-card{background:#fff2f7;border-color:#ecc0d2}
+.facts span{color:#a47789}
+.facts strong{color:#63364a}
+.empty-icon{border-color:#e3a1bb;color:#d85b8c}
+.study-card strong{color:#633047}
+.study-card span{color:#c0507c}
+.study-card small{color:#9a7182}
+footer{background:rgba(255,247,250,.9);border-color:#efc2d3;color:#a17b8c}
+.search-results{background:#fff7fa;border-color:#e4b0c5;box-shadow:0 18px 40px rgba(159,65,101,.18)}
+.search-results button{color:#60364a;border-color:#f0d1dc}
+.search-results button:hover{background:#ffe7f0}
+@media(max-width:650px){
+ .left{background:rgba(255,247,250,.96);border-color:#e5abc2;box-shadow:0 14px 40px rgba(145,52,91,.2)}
+ .viewbar{background:rgba(255,247,250,.96)}
+}
