@@ -83,7 +83,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     }
     const realisticFinish={
      skeletal:{roughness:.72,metalness:.01},
-     muscular:{roughness:.62,metalness:.01},
+     muscular:{roughness:.7,metalness:.005,clearcoat:.08,clearcoatRoughness:.72,sheen:.12},
      cardiac:{roughness:.56,metalness:.01},
      arterial:{roughness:.48,metalness:.02},
      venous:{roughness:.52,metalness:.02},
@@ -97,12 +97,13 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      connective:{roughness:.72,metalness:0},
      sensory:{roughness:.5,metalness:0}
     }
-    const makeMaterial=system=>new THREE.MeshStandardMaterial({
-     color:realisticColors[system]??0xd6b8c2,
-     roughness:realisticFinish[system]?.roughness??.6,
-     metalness:realisticFinish[system]?.metalness??0,
-     side:THREE.DoubleSide
-    })
+    const makeMaterial=system=>{
+     const finish=realisticFinish[system]||{}
+     const material=system==='muscular'
+      ? new THREE.MeshPhysicalMaterial({color:realisticColors[system]??0xd6b8c2,roughness:finish.roughness??.6,metalness:finish.metalness??0,clearcoat:finish.clearcoat??0,clearcoatRoughness:finish.clearcoatRoughness??.8,sheen:finish.sheen??0,sheenColor:new THREE.Color(0x5b0d18),side:THREE.DoubleSide})
+      : new THREE.MeshStandardMaterial({color:realisticColors[system]??0xd6b8c2,roughness:finish.roughness??.6,metalness:finish.metalness??0,side:THREE.DoubleSide})
+     return material
+    }
     const mats=new Map(systems.map(s=>[s.id,makeMaterial(s.id)]))
     let loaded=0
     for(let ci=0;ci<atlas.chunks.length;ci++){
@@ -124,6 +125,17 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       if(!merged)return
       merged.computeBoundingSphere()
       const mesh=new THREE.Mesh(merged,mats.get(system)||mats.get('connective'))
+      if(system==='muscular'){
+       mesh.material.userData.muscleShader=true
+       mesh.material.onBeforeCompile=shader=>{
+        shader.uniforms.uSelectedPart={value:-1}
+        shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float partIndex;\nvarying float vPartIndex;')
+        shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvPartIndex=partIndex;')
+        shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying float vPartIndex;\nuniform float uSelectedPart;\nfloat muscleHash(float n){return fract(sin(n*12.9898)*43758.5453);}')
+        shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat mv=muscleHash(vPartIndex);\nvec3 muscleTint=mix(vec3(0.62,0.09,0.12),vec3(0.88,0.30,0.30),mv*0.72);\ndiffuseColor.rgb*=muscleTint;\nif(abs(vPartIndex-uSelectedPart)<0.5){diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.32,0.62),0.72);}')
+        mesh.material.userData.shader=shader
+       }
+      }
       mesh.frustumCulled=false
       mesh.userData.system=system
       group.add(mesh)
@@ -183,6 +195,10 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const st=modelRef.current
      if(st){
       meshes.forEach(mesh=>{
+       if(mesh.userData.system==='muscular' && mesh.material.userData.shader){
+        const selectedIndex=selectedRef.current?parts.findIndex(p=>p.id===selectedRef.current.id):-1
+        mesh.material.userData.shader.uniforms.uSelectedPart.value=selectedIndex
+       }
        const system=mesh.userData.system
        const systemVisible=!!activeRef.current[system]
        let visible=systemVisible
@@ -216,7 +232,7 @@ export default function App(){
   <header><div><div className="eyebrow">ANATOMÍA 3D · ATLAS PERSONAL</div><h1>Atlas humano interactivo</h1><p>Modelo anatómico real basado en BodyParts3D 4.0.</p></div><div className="header-actions"><button onClick={()=>setStudy(!study)} className={study?'primary':''}>Modo estudio</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button><span className="badge">{progress<100?'CARGANDO '+progress+'%':'MODELO 3D CARGADO'}</span></div></header>
   <main>
    <aside className="left panel"><div className="panel-title">Sistemas anatómicos</div><div className="search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar estructura..."/></div><div className="search-hint">{catalog.length?`Catálogo real · ${catalog.length.toLocaleString("es-CO")} estructuras`:"Cargando catálogo..."}</div>{matches.length>0&&<div className="search-results">{matches.map(p=><button key={p.id} onClick={()=>chooseSearch(p)}><strong>{p.name}</strong><span>{systemMap[p.system]?.name||p.system}</span></button>)}</div>}
-   <div className="systems">{systems.map(s=><button className={active[s.id]?'system active':'system'} key={s.id} onClick={()=>toggle(s.id)}><span className="icon">{s.icon}</span><span>{s.name}</span><i/></button>)}</div>
+   <div className="systems"><button className="system active" onClick={()=>setActive(Object.fromEntries(systems.map(s=>[s.id,s.id==='muscular'])))}><span className="icon">💪</span><span>Solo músculos</span><i/></button>{systems.map(s=><button className={active[s.id]?'system active':'system'} key={s.id} onClick={()=>toggle(s.id)}><span className="icon">{s.icon}</span><span>{s.name}</span><i/></button>)}</div>
    <div className="tip"><strong>Herramientas</strong><label><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/> Transparencia</label><label><input type="checkbox" checked={autoRotate} onChange={e=>setAutoRotate(e.target.checked)}/> Rotación automática</label><label><input type="checkbox" checked={isolate} onChange={e=>setIsolate(e.target.checked)} disabled={!selected}/> Aislar selección</label><label><input type="checkbox" checked={explode} onChange={e=>setExplode(e.target.checked)}/> Vista explotada</label></div>
    </aside>
    <section className="viewer"><AnatomyScene active={active} onSelect={setSelected} onCatalog={setCatalog} selected={selected} resetToken={reset} isolate={isolate} explode={explode} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress}/>
