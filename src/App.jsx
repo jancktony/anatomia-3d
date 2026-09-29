@@ -3,10 +3,7 @@ import * as THREE from 'three'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-const MODEL_BASES=[
- 'https://cdn.jsdelivr.net/gh/ashemag/human-atlas@main/public/models/',
- 'https://raw.githubusercontent.com/ashemag/human-atlas/main/public/models/'
-]
+const MODEL_BASE='./models/'
 const MODEL_SOURCE='BodyParts3D 4.0 · CC BY 4.0'
 
 const systems=[
@@ -36,13 +33,15 @@ async function fetchFirst(urls){
  throw lastError||new Error('No se pudo descargar el recurso anatómico.')
 }
 async function loadAtlas(){
- const res=await fetchFirst(MODEL_BASES.map(base=>base+'atlas.json'))
+ const base=new URL(MODEL_BASE,document.baseURI)
+ const res=await fetchFirst([new URL('atlas.json',base).href])
  const atlas=await res.json()
  atlas.parts=atlas.parts||[]
+ const localFile=value=>value?new URL(String(value).split('/').pop(),base).href:null
  atlas.chunks=(atlas.chunks||[]).map(c=>({
   ...c,
-  urls:MODEL_BASES.map(base=>c.url?new URL(c.url,base).href:null).filter(Boolean),
-  gzipUrls:MODEL_BASES.map(base=>c.gzip?new URL(c.gzip,base).href:null).filter(Boolean)
+  urls:[localFile(c.url)].filter(Boolean),
+  gzipUrls:[localFile(c.gzip)].filter(Boolean)
  }))
  return atlas
 }
