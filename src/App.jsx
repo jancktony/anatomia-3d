@@ -73,7 +73,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     const key=new THREE.DirectionalLight(0xffffff,2.8);key.position.set(3,5,4);scene.add(key)
     const rim=new THREE.DirectionalLight(0x759bc0,1.5);rim.position.set(-4,2,-4);scene.add(rim)
     group=new THREE.Group();scene.add(group)
-    const makeMaterial=system=>new THREE.MeshStandardMaterial({color:systemMap[system]?.color||0xaebbb8,roughness:.58,metalness:.04,side:THREE.DoubleSide})
+    const makeMaterial=system=>new THREE.MeshStandardMaterial({color:0xe7a1c2,roughness:.58,metalness:.04,side:THREE.DoubleSide})
     const mats=new Map(systems.map(s=>[s.id,makeMaterial(s.id)]))
     let loaded=0
     for(let ci=0;ci<atlas.chunks.length;ci++){
