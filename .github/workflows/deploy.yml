@@ -38,6 +38,11 @@ jobs:
           cp /tmp/human-atlas/public/models/*.bin public/models/
           cp /tmp/human-atlas/public/models/*.bin.gz public/models/
 
+      - name: Download detailed muscle model
+        run: |
+          curl -L --fail --retry 3 -o public/models/detailed-muscles.glb https://raw.githubusercontent.com/JohanBellander/BodyExplorer/main/public/anatomy.glb
+          curl -L --fail --retry 3 -o public/models/detailed-muscles.json https://raw.githubusercontent.com/JohanBellander/BodyExplorer/main/public/mesh_mapping.json
+
       - name: Install dependencies
         run: npm install
 
