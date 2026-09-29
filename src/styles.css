@@ -70,3 +70,5 @@
 .quiz-result small{line-height:1.5;color:inherit}
 .quiz-result button,.study-start{border:0;background:#c52e78;color:#fff;border-radius:8px;padding:8px;font-size:9px;font-weight:800;cursor:pointer}
 @media(max-width:760px){.body-switch button{padding:5px 6px;font-size:7px}.quiz-card{padding:10px}}
+
+.favorite-button{width:100%;border:1px solid #e7bfd1;background:#fff7fa;color:#9b5d77;border-radius:9px;padding:9px;font-size:9px;font-weight:800;cursor:pointer;margin:2px 0 8px}.favorite-button:hover{background:#ffeaf2}.favorite-button.saved{background:#fff0c9;border-color:#e6c66d;color:#8a6611}.info-grid{display:grid;gap:8px}.info-grid .info-card{margin-top:0}.info-grid .info-card p{margin-bottom:0}
