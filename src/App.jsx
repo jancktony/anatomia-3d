@@ -36,16 +36,17 @@ async function decode(response,expected,compressed){
  if(expected&&buffer.byteLength!==expected)throw new Error('Una capa anatómica llegó incompleta.')
  return buffer
 }
-function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress}){
+function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress,isolate,explode,onCatalog}){
  const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
- const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view)
- activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view
+ const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode)
+ activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
   let renderer,scene,camera,controls,group,atlas,parts=[],meshes=[],pickers=[],materials=[],partTexture,selectionTexture
   const init=async()=>{
    try{
     atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
+    onCatalog?.(parts)
     scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f)
     camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
     renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})
@@ -104,7 +105,24 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      if(disposed)return;frame=requestAnimationFrame(animate)
      const st=modelRef.current
      if(st){
-      parts.forEach((p,i)=>{data[i*4+3]=activeRef.current[p.system]?1:0;selectedData[i*4]=selectedRef.current?.id===p.id?255:0})
+      parts.forEach((p,i)=>{
+       const isSelected=selectedRef.current?.id===p.id
+       const visible=!!activeRef.current[p.system] && (!isolateRef.current || isSelected)
+       data[i*4+3]=visible?1:0
+       selectedData[i*4]=isSelected?255:0
+       let ox=0,oy=0,oz=0
+       if(explodeRef.current && visible && !isSelected){
+        const b=p.bounds
+        if(b){
+         const cx=(b[0][0]+b[1][0])/2,cy=(b[0][1]+b[1][1])/2,cz=(b[0][2]+b[1][2])/2
+         const len=Math.hypot(cx,cy,cz)||1
+         const amount=.85
+         ox=cx/len*amount;oy=cy/len*amount;oz=cz/len*amount
+        }
+       }
+       data[i*4]=ox;data[i*4+1]=oy;data[i*4+2]=oz
+      })
+      materials.forEach(m=>{m.transparent=true;m.opacity=transparentRef.current?.52:1;m.needsUpdate=true})
       partTexture.needsUpdate=true;selectionTexture.needsUpdate=true
       const currentView=viewRef.current;const v=currentView==='back'?[0,1,-4.2]:currentView==='left'?[-4.2,1,0]:currentView==='right'?[4.2,1,0]:[0,1,4.2]
       camera.position.lerp(new THREE.Vector3(...v),.08);controls.target.set(0,.85,0)
@@ -123,20 +141,22 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
 }
 export default function App(){
- const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[search,setSearch]=useState(''),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0)
+ const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[search,setSearch]=useState(''),[catalog,setCatalog]=useState([]),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0),[isolate,setIsolate]=useState(false),[explode,setExplode]=useState(false)
  const toggle=id=>setActive(a=>({...a,[id]:!a[id]}))
+ const matches=search.trim()?catalog.filter(p=>p.name?.toLowerCase().includes(search.trim().toLowerCase())).slice(0,8):[]
+ const chooseSearch=p=>{setSelected(p);setSearch(p.name||'')}
  return <div className="app">
   <header><div><div className="eyebrow">ANATOMÍA 3D · ATLAS PERSONAL</div><h1>Atlas humano interactivo</h1><p>Modelo anatómico real basado en BodyParts3D 4.0.</p></div><div className="header-actions"><button onClick={()=>setStudy(!study)} className={study?'primary':''}>Modo estudio</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button><span className="badge">{progress<100?'CARGANDO '+progress+'%':'MODELO 3D CARGADO'}</span></div></header>
   <main>
-   <aside className="left panel"><div className="panel-title">Sistemas anatómicos</div><div className="search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar estructura..."/></div><div className="search-hint">Catálogo real · 2.234 estructuras</div>
+   <aside className="left panel"><div className="panel-title">Sistemas anatómicos</div><div className="search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar estructura..."/></div><div className="search-hint">{catalog.length?`Catálogo real · ${catalog.length.toLocaleString("es-CO")} estructuras`:"Cargando catálogo..."}</div>{matches.length>0&&<div className="search-results">{matches.map(p=><button key={p.id} onClick={()=>chooseSearch(p)}><strong>{p.name}</strong><span>{systemMap[p.system]?.name||p.system}</span></button>)}</div>}
    <div className="systems">{systems.map(s=><button className={active[s.id]?'system active':'system'} key={s.id} onClick={()=>toggle(s.id)}><span className="icon">{s.icon}</span><span>{s.name}</span><i/></button>)}</div>
-   <div className="tip"><strong>Herramientas</strong><label><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/> Transparencia</label><label><input type="checkbox" checked={autoRotate} onChange={e=>setAutoRotate(e.target.checked)}/> Rotación automática</label></div>
+   <div className="tip"><strong>Herramientas</strong><label><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/> Transparencia</label><label><input type="checkbox" checked={autoRotate} onChange={e=>setAutoRotate(e.target.checked)}/> Rotación automática</label><label><input type="checkbox" checked={isolate} onChange={e=>setIsolate(e.target.checked)} disabled={!selected}/> Aislar selección</label><label><input type="checkbox" checked={explode} onChange={e=>setExplode(e.target.checked)}/> Vista explotada</label></div>
    </aside>
-   <section className="viewer"><AnatomyScene active={active} onSelect={setSelected} selected={selected} resetToken={reset} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress}/>
+   <section className="viewer"><AnatomyScene active={active} onSelect={setSelected} onCatalog={setCatalog} selected={selected} resetToken={reset} isolate={isolate} explode={explode} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress}/>
     <div className="viewbar"><button className={view==='front'?'selected':''} onClick={()=>setView('front')}>Frontal</button><button className={view==='back'?'selected':''} onClick={()=>setView('back')}>Posterior</button><button className={view==='left'?'selected':''} onClick={()=>setView('left')}>Lateral</button><button className={view==='right'?'selected':''} onClick={()=>setView('right')}>Derecha</button></div>
     <div className="viewer-label"><span className="dot"/>Modelo BodyParts3D · arrastra para rotar · rueda para zoom</div>
    </section>
-   <aside className="right panel">{study?<div className="study"><div className="kicker">MODO ESTUDIO</div><h2>Identifica la estructura</h2><p>Haz clic directamente sobre una estructura anatómica del modelo.</p><div className="study-card">{selected?<><strong>{selected.name}</strong><span>{systemMap[selected.system]?.name}</span><small>{explain(selected.name,selected.system)}</small></>:<><strong>Selecciona una estructura</strong><span>Haz clic sobre el modelo 3D</span></>}</div><button className="primary full" onClick={()=>setReset(x=>x+1)}>Nueva vista</button></div>:selected?<><div className="kicker">ESTRUCTURA SELECCIONADA</div><h2>{selected.name}</h2><div className="tag">{systemMap[selected.system]?.name}</div><div className="facts"><div><span>Sistema</span><strong>{systemMap[selected.system]?.name}</strong></div><div><span>Función / referencia</span><strong>{explain(selected.name,selected.system)}</strong></div></div><div className="section"><div className="panel-title">Fuente anatómica</div><p>{MODEL_SOURCE}. El conjunto utilizado es un modelo de referencia masculino adulto y tiene finalidad educativa.</p></div></>:<div className="empty"><div className="empty-icon">✦</div><h2>Selecciona una estructura</h2><p>Haz clic directamente sobre el modelo anatómico real.</p></div>}</aside>
+   <aside className="right panel">{study?<div className="study"><div className="kicker">MODO ESTUDIO</div><h2>Identifica la estructura</h2><p>Haz clic directamente sobre una estructura anatómica del modelo.</p><div className="study-card">{selected?<><strong>{selected.name}</strong><span>{systemMap[selected.system]?.name}</span><small>{explain(selected.name,selected.system)}</small></>:<><strong>Selecciona una estructura</strong><span>Haz clic sobre el modelo 3D</span></>}</div><button className="primary full" onClick={()=>setReset(x=>x+1)}>Nueva vista</button></div>:selected?<><div className="kicker">ESTRUCTURA SELECCIONADA</div><h2>{selected.name}</h2><div className="tag">{systemMap[selected.system]?.name}</div><div className="selection-actions"><button className="primary" onClick={()=>setIsolate(true)}>Aislar</button><button onClick={()=>setIsolate(false)}>Mostrar todo</button></div><div className="facts"><div><span>Sistema</span><strong>{systemMap[selected.system]?.name}</strong></div><div><span>Función / referencia</span><strong>{explain(selected.name,selected.system)}</strong></div></div><div className="section"><div className="panel-title">Fuente anatómica</div><p>{MODEL_SOURCE}. El conjunto utilizado es un modelo de referencia masculino adulto y tiene finalidad educativa.</p></div></>:<div className="empty"><div className="empty-icon">✦</div><h2>Selecciona una estructura</h2><p>Haz clic directamente sobre el modelo anatómico real.</p></div>}</aside>
   </main>
   <footer><span>Anatomía 3D · Proyecto educativo personal</span><span>BodyParts3D 4.0 · CC BY 4.0 · DBCLS</span></footer>
  </div>
