@@ -268,8 +268,11 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
      atlasMuscle.forEach(m=>m.visible=false)
     }
+    const atlasBounds=new THREE.Box3().setFromObject(group)
+    const center=atlasBounds.getCenter(new THREE.Vector3())
+    if(detailedGroup&&detailedMeshes.length){detailedGroup.position.copy(center)}
     const bounds=new THREE.Box3().setFromObject(group)
-    const center=bounds.getCenter(new THREE.Vector3())
+    if(detailedGroup&&detailedMeshes.length)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
     const sphere=bounds.getBoundingSphere(new THREE.Sphere())
     const radius=Math.max(sphere.radius,.5)
     controls.target.copy(center)
@@ -311,6 +314,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     let appliedView='front'
     const setViewPosition=which=>{
      const bounds=new THREE.Box3().setFromObject(group)
+     if(detailedGroup&&detailedMeshes.length)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
      const center=bounds.getCenter(new THREE.Vector3())
      const sphere=bounds.getBoundingSphere(new THREE.Sphere())
      const radius=Math.max(sphere.radius,.5)
