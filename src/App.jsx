@@ -85,21 +85,9 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
    try{
     atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
     let detailed=null,detailedSkeleton=null
-    try{[detailed,detailedSkeleton]=await Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()])}catch(_){detailed=null;detailedSkeleton=null}
-    if(disposed)return
-    if(detailed){
-     detailedParts=detailed.mapping.map((p,i)=>({
-      id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
-      name:p.name||p.originalName||`Músculo ${i+1}`,
-      originalName:p.originalName||p.name||'',
-      system:'muscular',
-      source:'Z-Anatomy / BodyExplorer',
-      isTendon:!!p.isTendon,
-      fmaId:p.fmaId||'',
-      bpId:p.bpId||''
-     }))
-    }
-    onCatalog?.([...detailedParts,...parts])
+    const detailedPromise=Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>[null,null])
+    onCatalog?.(parts)
+
     scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
     camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
     const mobile=window.matchMedia('(max-width: 650px)').matches
@@ -270,9 +258,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     }
     const atlasBounds=new THREE.Box3().setFromObject(group)
     const center=atlasBounds.getCenter(new THREE.Vector3())
-    if(detailedGroup&&detailedMeshes.length){detailedGroup.position.copy(center)}
     const bounds=new THREE.Box3().setFromObject(group)
-    if(detailedGroup&&detailedMeshes.length)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
     const sphere=bounds.getBoundingSphere(new THREE.Sphere())
     const radius=Math.max(sphere.radius,.5)
     controls.target.copy(center)
@@ -287,13 +273,13 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     controls.update()
     modelRef.current={atlas,parts,detailedParts,camera,controls,group,detailedGroup,meshes,detailedMeshes}
     const ray=new THREE.Raycaster(),mouse=new THREE.Vector2()
-    const selectable=[...meshes,...detailedMeshes]
+    const selectable=meshes
     const click=e=>{
      const r=renderer.domElement.getBoundingClientRect()
      mouse.x=(e.clientX-r.left)/r.width*2-1
      mouse.y=-(e.clientY-r.top)/r.height*2+1
      ray.setFromCamera(mouse,camera)
-     const hits=ray.intersectObjects(selectable,false)
+     const hits=ray.intersectObjects([...selectable,...detailedMeshes],false)
      if(!hits.length)return
      const hit=hits[0]
      if(hit.object.userData.isDetailedMuscle){
@@ -314,7 +300,6 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     let appliedView='front'
     const setViewPosition=which=>{
      const bounds=new THREE.Box3().setFromObject(group)
-     if(detailedGroup&&detailedMeshes.length)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
      const center=bounds.getCenter(new THREE.Vector3())
      const sphere=bounds.getBoundingSphere(new THREE.Sphere())
      const radius=Math.max(sphere.radius,.5)
@@ -365,6 +350,37 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      }
     }
     animate()
+    ;(async()=>{
+     const pair=await detailedPromise
+     if(disposed)return
+     detailed=pair[0];detailedSkeleton=pair[1]
+     if(!detailed)return
+
+     detailedParts=detailed.mapping.map((p,i)=>({
+      id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
+      name:p.name||p.originalName||`Músculo ${i+1}`,
+      originalName:p.originalName||p.name||'',
+      system:'muscular',
+      source:'Z-Anatomy / BodyExplorer',
+      isTendon:!!p.isTendon,
+      fmaId:p.fmaId||'',
+      bpId:p.bpId||''
+     }))
+    
+     onCatalog?.([...detailedParts,...parts])
+     const detailedBounds=new THREE.Box3().setFromObject(detailedGroup)
+     const detailedCenter=detailedBounds.getCenter(new THREE.Vector3())
+     detailedGroup.position.copy(center).sub(detailedCenter)
+     detailedGroup.updateMatrixWorld(true)
+     const allBounds=new THREE.Box3().setFromObject(group)
+     allBounds.union(new THREE.Box3().setFromObject(detailedGroup))
+     const allSphere=allBounds.getBoundingSphere(new THREE.Sphere())
+     const allRadius=Math.max(allSphere.radius,.5)
+     camera.near=Math.max(.01,allRadius/1000)
+     camera.far=Math.max(100,allRadius*8)
+     camera.updateProjectionMatrix()
+     controls.maxDistance=Math.max(allRadius*8,10)
+    })().catch(()=>{})
     return()=>{renderer.domElement.removeEventListener('click',click);window.removeEventListener('resize',resize)}
    }catch(e){if(!disposed)setError(e instanceof Error?e.message:'No se pudo cargar el modelo anatómico.')}
   }
