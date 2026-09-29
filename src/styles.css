@@ -73,3 +73,47 @@
   .tip{grid-template-columns:1fr}
   .header-actions .badge{display:none}
 }
+
+
+/* Tema rosa editorial */
+:root{color-scheme:dark}
+body{background:#180b13;color:#fff7fb}
+.app{background:radial-gradient(circle at 50% 42%,#5a2140 0,#2b1020 42%,#180b13 78%)}
+header,.panel{background:#210d18e8;border-color:#4b2035}
+.viewer{background:radial-gradient(circle at 50% 42%,#42172f 0,#24101c 62%,#180b13 100%)}
+.header-actions button{background:#35152a;border-color:#70405a;color:#f7dbe8}
+.header-actions .primary,.primary{background:linear-gradient(135deg,#d94d88,#b82f6e);border-color:#ef7cab;box-shadow:0 8px 24px #b82f6e55}
+.badge{border-color:#7b3b5c;color:#ffb7d0;background:#35152a}
+.eyebrow,.kicker{color:#ef78a8}
+.app p{color:#c39cad}
+.panel-title{color:#d3adbd}
+.search{border-color:#5b2942;background:#29111e}
+.search span{color:#c17d9b}
+.search input{color:#fff0f6}
+.search:focus-within{border-color:#d85a91;box-shadow:0 0 0 3px #d85a9120}
+.system{color:#d2b1c0}
+.system:hover{background:#3a1729}
+.system.active{background:linear-gradient(90deg,#512039,#40172d);border-color:#8b3e61;color:#fff0f6}
+.system.active i{background:#f27aaa;box-shadow:0 0 10px #f27aaa}
+.system i{background:#654052}
+.tip{border-color:#4d2136;color:#a78696}
+.tip strong{color:#d5b3c1}
+.tip input{accent-color:#e85b93}
+.viewbar{background:#1b0b14e8;border-color:#6a2f49}
+.viewbar button{color:#c39cad}
+.viewbar button.selected{background:#7b2f52;color:#fff0f6}
+.viewer-label{background:#180b13e8;border-color:#54263d;color:#c7a7b6}
+.dot{background:#78d9ad}
+.right p{color:#c39cad}
+.right .tag{color:#ffc1d7;background:#3c1528;border-color:#7c3857}
+.facts div,.study-card{background:#2b1320;border-color:#54263c}
+.facts span{color:#a57c90}
+.facts strong{color:#e3c8d4}
+.empty-icon{border-color:#74364f;color:#f07ca7}
+.study-card strong{color:#ffeaf2}
+.study-card span{color:#df729c}
+.study-card small{color:#b79aaa}
+footer{background:#190a12;border-color:#4b2035;color:#967385}
+.search-results{background:#25101c;border-color:#673047}
+.search-results button:hover{background:#4a1c33}
+@media(max-width:650px){.left{background:#210d18f5;border-color:#71344e}.viewbar{background:#1b0b14ee}}
