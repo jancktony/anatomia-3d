@@ -73,8 +73,8 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     const key=new THREE.DirectionalLight(0xffffff,2.8);key.position.set(3,5,4);scene.add(key)
     const rim=new THREE.DirectionalLight(0x759bc0,1.5);rim.position.set(-4,2,-4);scene.add(rim)
     group=new THREE.Group();scene.add(group)
-    const width=THREE.MathUtils.ceilPowerOfTwo(parts.length),data=new Float32Array(width*4),selectedData=new Uint8Array(width*4)
-    partTexture=new THREE.DataTexture(data,width,1,THREE.RGBAFormat,THREE.FloatType);partTexture.needsUpdate=true
+    const width=THREE.MathUtils.ceilPowerOfTwo(parts.length),data=new Uint8Array(width*4),selectedData=new Uint8Array(width*4)
+    partTexture=new THREE.DataTexture(data,width,1,THREE.RGBAFormat,THREE.UnsignedByteType);partTexture.minFilter=THREE.NearestFilter;partTexture.magFilter=THREE.NearestFilter;partTexture.needsUpdate=true
     selectionTexture=new THREE.DataTexture(selectedData,width,1);selectionTexture.needsUpdate=true
     const makeMaterial=system=>{
      const m=new THREE.MeshStandardMaterial({color:systemMap[system]?.color||0xaebbb8,roughness:.58,metalness:.04,transparent:true,opacity:1,side:THREE.DoubleSide})
@@ -126,7 +126,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       parts.forEach((p,i)=>{
        const isSelected=selectedRef.current?.id===p.id
        const visible=!!activeRef.current[p.system] && (!isolateRef.current || isSelected)
-       data[i*4+3]=visible?1:0
+       data[i*4+3]=visible?255:0
        selectedData[i*4]=isSelected?255:0
        let ox=0,oy=0,oz=0
        if(explodeRef.current && visible && !isSelected){
@@ -138,7 +138,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
          ox=cx/len*amount;oy=cy/len*amount;oz=cz/len*amount
         }
        }
-       data[i*4]=ox;data[i*4+1]=oy;data[i*4+2]=oz
+       
       })
       materials.forEach(m=>{m.transparent=true;m.opacity=transparentRef.current?.52:1;m.needsUpdate=true})
       partTexture.needsUpdate=true;selectionTexture.needsUpdate=true
