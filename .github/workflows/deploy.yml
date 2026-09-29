@@ -41,8 +41,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Prepare build version
+        run: |
+          printf '{"version":"%s"}\n' "$GITHUB_SHA" > public/version.json
+
       - name: Build
         run: npm run build
+
+      - name: Inject build version into HTML
+        run: sed -i "s/__BUILD_VERSION__/$GITHUB_SHA/g" dist/index.html
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
