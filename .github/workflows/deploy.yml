@@ -40,15 +40,17 @@ jobs:
       - name: Download female anatomy atlas
         run: |
           rm -rf /tmp/female-atlas
-          git clone --depth 1 https://github.com/HiMahendraBeniwal/female-atlas.git /tmp/female-atlas
-          test -f /tmp/female-atlas/public/models/atlas.json
-          mkdir -p public/models/female
-          cp /tmp/female-atlas/public/models/atlas.json public/models/female/
-          find /tmp/female-atlas/public/models -maxdepth 1 -type f \\
-            \( -name '*.bin' -o -name '*.bin.gz' \) \\
-            -exec cp {} public/models/female/ \\
-            ;
-          cp /tmp/female-atlas/public/ATTRIBUTION.md public/models/female/ATTRIBUTION.md
+          git clone --depth 1 --filter=blob:none --no-checkout https://github.com/HiMahendraBeniwal/female-atlas.git /tmp/female-atlas
+          cd /tmp/female-atlas
+          git sparse-checkout init --cone
+          git sparse-checkout set public/models public/ATTRIBUTION.md
+          git checkout
+          test -s public/models/atlas.json
+          mkdir -p "$GITHUB_WORKSPACE/public/models/female"
+          cp public/models/atlas.json "$GITHUB_WORKSPACE/public/models/female/"
+          find public/models -maxdepth 1 -type f \( -name '*.bin' -o -name '*.bin.gz' \) -exec cp {} "$GITHUB_WORKSPACE/public/models/female/" \;
+          test -n "$(find "$GITHUB_WORKSPACE/public/models/female" -maxdepth 1 -type f \( -name '*.bin' -o -name '*.bin.gz' \) -print -quit)"
+          cp public/ATTRIBUTION.md "$GITHUB_WORKSPACE/public/models/female/ATTRIBUTION.md"
 
       - name: Download detailed muscle model
         run: |
