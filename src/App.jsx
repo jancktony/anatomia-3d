@@ -267,6 +267,17 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      if(disposed)return
      detailed=pair[0];detailedSkeleton=pair[1]
      if(!detailed)return
+     detailedParts=detailed.mapping.map((p,i)=>({
+      id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
+      name:p.name||p.originalName||`Músculo ${i+1}`,
+      originalName:p.originalName||p.name||'',
+      system:'muscular',
+      source:'Z-Anatomy / BodyExplorer',
+      isTendon:!!p.isTendon,
+      fmaId:p.fmaId||'',
+      bpId:p.bpId||''
+     }))
+    
 
      const sourceRoot=detailed.gltf.scene
      const sourceBox=new THREE.Box3().setFromObject(sourceRoot)
@@ -355,21 +366,11 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
      atlasMuscle.forEach(m=>m.visible=false)
 
-     detailedParts=detailed.mapping.map((p,i)=>({
-      id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
-      name:p.name||p.originalName||`Músculo ${i+1}`,
-      originalName:p.originalName||p.name||'',
-      system:'muscular',
-      source:'Z-Anatomy / BodyExplorer',
-      isTendon:!!p.isTendon,
-      fmaId:p.fmaId||'',
-      bpId:p.bpId||''
-     }))
-    
       const detailedBounds=new THREE.Box3().setFromObject(detailedGroup)
      const detailedCenter=detailedBounds.getCenter(new THREE.Vector3())
      detailedGroup.position.copy(center).sub(detailedCenter)
      detailedGroup.updateMatrixWorld(true)
+     onCatalog?.([...detailedParts,...parts])
      const allBounds=new THREE.Box3().setFromObject(group)
      allBounds.union(new THREE.Box3().setFromObject(detailedGroup))
      const allSphere=allBounds.getBoundingSphere(new THREE.Sphere())
