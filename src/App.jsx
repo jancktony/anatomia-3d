@@ -38,6 +38,8 @@ async function decode(response,expected,compressed){
 }
 function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress}){
  const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
+ const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view)
+ activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
   let renderer,scene,camera,controls,group,atlas,parts=[],meshes=[],pickers=[],materials=[],partTexture,selectionTexture
@@ -102,11 +104,11 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      if(disposed)return;frame=requestAnimationFrame(animate)
      const st=modelRef.current
      if(st){
-      parts.forEach((p,i)=>{data[i*4+3]=active[p.system]?1:0;selectedData[i*4]=selected?.id===p.id?255:0})
+      parts.forEach((p,i)=>{data[i*4+3]=activeRef.current[p.system]?1:0;selectedData[i*4]=selectedRef.current?.id===p.id?255:0})
       partTexture.needsUpdate=true;selectionTexture.needsUpdate=true
-      const v=view==='back'?[0,1,-4.2]:view==='left'?[-4.2,1,0]:view==='right'?[4.2,1,0]:[0,1,4.2]
+      const currentView=viewRef.current;const v=currentView==='back'?[0,1,-4.2]:currentView==='left'?[-4.2,1,0]:currentView==='right'?[4.2,1,0]:[0,1,4.2]
       camera.position.lerp(new THREE.Vector3(...v),.08);controls.target.set(0,.85,0)
-      group.rotation.y=autoRotate?group.rotation.y+.0018:group.rotation.y
+      group.rotation.y=autoRotateRef.current?group.rotation.y+.0018:group.rotation.y
       controls.update();renderer.render(scene,camera)
      }
     }
@@ -116,7 +118,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
   }
   init()
   return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());pickers.forEach(m=>m?.geometry.dispose());materials.forEach(m=>m.dispose());partTexture?.dispose();selectionTexture?.dispose()}
- },[active,autoRotate,selected,view])
+ },[])
  useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0}},[resetToken])
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
 }
