@@ -1,113 +1,141 @@
 import React,{useEffect,useRef,useState} from 'react'
 import * as THREE from 'three'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
+import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+
+const MODEL_BASE='https://raw.githubusercontent.com/ashemag/human-atlas/main/public/models/'
+const MODEL_SOURCE='BodyParts3D 4.0 · CC BY 4.0'
 
 const systems=[
- {id:'skeleton',name:'Esquelético',icon:'🦴',color:0xdce5ec},
- {id:'muscular',name:'Muscular',icon:'💪',color:0xc84a57},
- {id:'nervous',name:'Nervioso',icon:'⚡',color:0xe7bd48},
- {id:'cardio',name:'Cardiovascular',icon:'♥',color:0xd63f55},
- {id:'respiratory',name:'Respiratorio',icon:'◉',color:0x62a9d8},
- {id:'digestive',name:'Digestivo',icon:'◒',color:0xd47b52},
- {id:'urinary',name:'Urinario',icon:'◈',color:0x8c78d3},
- {id:'reproductive',name:'Reproductor',icon:'✦',color:0xb15dc5}
+ {id:'skeletal',name:'Esquelético',icon:'🦴',color:0xe2d9ba},{id:'muscular',name:'Muscular',icon:'💪',color:0xa85b50},
+ {id:'cardiac',name:'Corazón',icon:'♥',color:0xb96760},{id:'arterial',name:'Arterial',icon:'↗',color:0xc05245},
+ {id:'venous',name:'Venoso',icon:'↙',color:0x527c9f},{id:'nervous',name:'Nervioso',icon:'⚡',color:0xd8b565},
+ {id:'respiratory',name:'Respiratorio',icon:'◉',color:0xb98991},{id:'digestive',name:'Digestivo',icon:'◒',color:0xb8916b},
+ {id:'urinary',name:'Urinario',icon:'◈',color:0xb47961},{id:'lymphatic',name:'Linfático',icon:'◎',color:0x879f7c},
+ {id:'endocrine',name:'Endocrino',icon:'✦',color:0xc5a09a},{id:'reproductive',name:'Reproductor',icon:'◇',color:0xbda098},
+ {id:'connective',name:'Conectivo',icon:'△',color:0xaec3bb},{id:'sensory',name:'Órganos sensoriales',icon:'◌',color:0xb0c8ce}
 ]
-
-const structures={
- 'Cráneo':{system:'skeleton',region:'Cabeza',function:'Protege el encéfalo y forma el esqueleto de la cabeza.'},
- 'Columna vertebral':{system:'skeleton',region:'Tronco',function:'Sostiene el cuerpo y protege la médula espinal.'},
- 'Costillas':{system:'skeleton',region:'Tórax',function:'Protegen los órganos torácicos y participan en la mecánica respiratoria.'},
- 'Pelvis':{system:'skeleton',region:'Pelvis',function:'Transfiere el peso del tronco a los miembros inferiores y protege vísceras pélvicas.'},
- 'Fémur':{system:'skeleton',region:'Miembro inferior',function:'Principal hueso del muslo y soporte de carga.'},
- 'Tibia':{system:'skeleton',region:'Pierna',function:'Principal hueso medial de la pierna y transmisor de carga.'},
- 'Pectoral mayor':{system:'muscular',region:'Tórax',function:'Aduce, rota medialmente y participa en la flexión del brazo.'},
- 'Deltoides':{system:'muscular',region:'Hombro',function:'Principal músculo de la abducción del brazo.'},
- 'Cuádriceps':{system:'muscular',region:'Muslo',function:'Extiende la rodilla; el recto femoral también flexiona la cadera.'},
- 'Corazón':{system:'cardio',region:'Mediastino',function:'Bombea la sangre a la circulación pulmonar y sistémica.'},
- 'Aorta':{system:'cardio',region:'Tórax y abdomen',function:'Principal arteria que distribuye sangre oxigenada desde el ventrículo izquierdo.'},
- 'Pulmones':{system:'respiratory',region:'Tórax',function:'Realizan el intercambio gaseoso entre el aire y la sangre.'},
- 'Tráquea':{system:'respiratory',region:'Cuello y tórax',function:'Conduce el aire hacia los bronquios.'},
- 'Hígado':{system:'digestive',region:'Abdomen superior',function:'Participa en metabolismo, almacenamiento y producción de sustancias esenciales.'},
- 'Estómago':{system:'digestive',region:'Abdomen superior',function:'Almacena y mezcla el alimento e inicia su digestión química.'},
- 'Encéfalo':{system:'nervous',region:'Cráneo',function:'Integra información sensorial y coordina funciones del organismo.'},
- 'Médula espinal':{system:'nervous',region:'Canal vertebral',function:'Conduce información nerviosa entre el encéfalo y el cuerpo.'},
- 'Riñones':{system:'urinary',region:'Abdomen posterior',function:'Filtran la sangre y contribuyen al equilibrio de agua y electrolitos.'},
- 'Vejiga':{system:'urinary',region:'Pelvis',function:'Almacena temporalmente la orina.'},
- 'Sistema reproductor':{system:'reproductive',region:'Pelvis',function:'Comprende órganos y estructuras relacionados con la reproducción.'}
+const systemMap=Object.fromEntries(systems.map(s=>[s.id,s]))
+function explain(name,system){
+ const n=name.toLowerCase()
+ const facts={'heart':'Bomba muscular de cuatro cavidades que impulsa la sangre por las circulaciones pulmonar y sistémica.','liver':'Órgano metabólico que procesa nutrientes, produce bilis y sintetiza numerosas proteínas plasmáticas.','brain':'Órgano central del sistema nervioso que integra información y participa en percepción, movimiento y regulación corporal.','stomach':'Cámara muscular que almacena y mezcla el alimento e inicia su digestión química.','spleen':'Órgano linfoide que filtra la sangre y participa en la respuesta inmunitaria.','pancreas':'Órgano con funciones digestivas y endocrinas; produce enzimas y hormonas como insulina y glucagón.','urinary bladder':'Reservorio muscular que almacena temporalmente la orina.','trachea':'Conducto respiratorio que conecta la laringe con los bronquios y mantiene abierta la vía aérea.','diaphragm':'Músculo que separa tórax y abdomen y participa de forma principal en la inspiración.'}
+ return facts[n]||systemMap[system]?.name||'Estructura anatómica del cuerpo humano.'
 }
-
-function part(name,geo,mat,pos,system,scale=[1,1,1]){
- const m=new THREE.Mesh(geo,mat);m.position.set(...pos);m.scale.set(...scale);m.userData={name,system};return m
+async function loadAtlas(){
+ const res=await fetch(MODEL_BASE+'atlas.json');if(!res.ok)throw new Error('No se pudo cargar el catálogo anatómico.')
+ const atlas=await res.json()
+ atlas.parts=atlas.parts||[]
+ atlas.chunks=(atlas.chunks||[]).map(c=>({...c,url:c.url?new URL(c.url,MODEL_BASE).href:null,gzip:c.gzip?new URL(c.gzip,MODEL_BASE).href:null}))
+ return atlas
 }
-
-function AnatomyScene({active,onSelect,resetToken,transparent,autoRotate,view}){
- const ref=useRef(), sceneRef=useRef()
+async function decode(response,expected,compressed){
+ if(!response.ok)throw new Error('No se pudo descargar una capa anatómica.')
+ const payload=await response.arrayBuffer(),u=new Uint8Array(payload)
+ const isGzip=compressed&&u[0]===0x1f&&u[1]===0x8b
+ const buffer=isGzip?await new Response(new Blob([payload]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer():payload
+ if(expected&&buffer.byteLength!==expected)throw new Error('Una capa anatómica llegó incompleta.')
+ return buffer
+}
+function AnatomyScene({active,onSelect,resetToken,transparent,autoRotate,view,onProgress}){
+ const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
  useEffect(()=>{
-  const el=ref.current,scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f)
-  const camera=new THREE.PerspectiveCamera(40,el.clientWidth/el.clientHeight,.05,100);camera.position.set(0,1.25,6)
-  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(el.clientWidth,el.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;el.appendChild(renderer.domElement)
-  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.07;controls.target.set(0,1.25,0);controls.minDistance=2.7;controls.maxDistance=9
-  scene.add(new THREE.HemisphereLight(0xffffff,0x172033,2.3))
-  const key=new THREE.DirectionalLight(0xffffff,3.2);key.position.set(3,5,5);scene.add(key)
-  const rim=new THREE.DirectionalLight(0x5b8fbd,1.5);rim.position.set(-4,2,-4);scene.add(rim)
-  const group=new THREE.Group();scene.add(group);const created=[]
-  const add=m=>{group.add(m);created.push(m)}
-  const bone=new THREE.MeshStandardMaterial({color:0xdce5ec,roughness:.65})
-  const muscle=new THREE.MeshStandardMaterial({color:0xb83f4c,roughness:.72})
-  const organ=new THREE.MeshStandardMaterial({color:0xa65362,roughness:.65})
-  const nerve=new THREE.MeshStandardMaterial({color:0xe4bb42,roughness:.5,emissive:0x352600})
-  const vessel=new THREE.MeshStandardMaterial({color:0xd33d53,roughness:.58})
-  const blue=new THREE.MeshStandardMaterial({color:0x4d8fbe,roughness:.58})
-  add(part('Cráneo',new THREE.SphereGeometry(.43,32,22),bone,[0,3.12,0],'skeleton',[1.02,1.08,.92]))
-  add(part('Columna vertebral',new THREE.CylinderGeometry(.105,.15,2.25,18),bone,[0,1.7,0],'skeleton'))
-  for(let i=0;i<7;i++){const y=2.55-i*.25;add(part('Costillas',new THREE.TorusGeometry(.64,.035,8,32,Math.PI),bone,[0,y,.02],'skeleton',[1,.9,1]))}
-  add(part('Pelvis',new THREE.TorusGeometry(.63,.17,12,28,Math.PI*1.4),bone,[0,.62,0],'skeleton',[1,.75,1]))
-  for(const x of[-.23,.23]){add(part('Fémur',new THREE.CylinderGeometry(.115,.15,1.75,18),bone,[x,-.35,0],'skeleton'));add(part('Tibia',new THREE.CylinderGeometry(.085,.11,1.5,16),bone,[x,-1.95,0],'skeleton'))}
-  for(const x of[-.44,.44]){add(part('Pectoral mayor',new THREE.SphereGeometry(.32,24,18),muscle,[x,2.28,.23],'muscular',[1.2,.8,.72]));add(part('Deltoides',new THREE.SphereGeometry(.23,22,16),muscle,[x*1.7,2.3,0],'muscular'));add(part('Cuádriceps',new THREE.CapsuleGeometry(.19,.86,10,18),muscle,[x,-.43,.18],'muscular',[1.05,1,.8]))}
-  add(part('Corazón',new THREE.SphereGeometry(.3,28,20),vessel,[0,1.87,.4],'cardio',[.9,1.12,.82]))
-  add(part('Aorta',new THREE.CylinderGeometry(.055,.07,.75,14),vessel,[.05,2.28,.3],'cardio',[1,1,1]))
-  for(const x of[-.27,.27])add(part('Pulmones',new THREE.SphereGeometry(.4,28,20),blue,[x,1.92,.04],'respiratory',[.75,1.25,.65]))
-  add(part('Tráquea',new THREE.CylinderGeometry(.07,.08,.62,16),blue,[0,2.48,.03],'respiratory'))
-  add(part('Hígado',new THREE.SphereGeometry(.52,28,20),organ,[.27,1.15,.1],'digestive',[1.25,.72,.78]))
-  add(part('Estómago',new THREE.SphereGeometry(.3,24,18),organ,[-.3,1.18,.28],'digestive',[.9,1.2,.9]))
-  add(part('Encéfalo',new THREE.SphereGeometry(.31,28,20),nerve,[0,3.17,.08],'nervous',[1.15,.9,1]))
-  add(part('Médula espinal',new THREE.CylinderGeometry(.045,.055,1.95,12),nerve,[0,1.7,.08],'nervous'))
-  for(const x of[-.34,.34])add(part('Riñones',new THREE.SphereGeometry(.21,24,16),organ,[x,.82,.08],'urinary',[.7,1.25,1]))
-  add(part('Vejiga',new THREE.SphereGeometry(.23,24,18),organ,[0,.28,.18],'urinary',[1,.8,.9]))
-  add(part('Sistema reproductor',new THREE.SphereGeometry(.23,24,18),organ,[0,.05,.2],'reproductive',[1,.8,.8]))
-  const ray=new THREE.Raycaster(),mouse=new THREE.Vector2()
-  const click=e=>{const r=el.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(created)[0];if(hit)onSelect(hit.object.userData.name,hit.object.userData.system)}
-  el.addEventListener('click',click)
-  const resize=()=>{camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight)}
-  window.addEventListener('resize',resize)
-  sceneRef.current={camera,renderer,controls,created,group}
-  let frame;const loop=()=>{if(autoRotate)group.rotation.y+=.0025;controls.update();renderer.render(scene,camera);frame=requestAnimationFrame(loop)};loop()
-  return()=>{cancelAnimationFrame(frame);window.removeEventListener('resize',resize);el.removeEventListener('click',click);renderer.dispose();el.removeChild(renderer.domElement)}
- },[])
- useEffect(()=>{const s=sceneRef.current;if(!s)return;s.created.forEach(m=>{m.visible=!!active[m.userData.system];m.material.transparent=transparent;m.material.opacity=transparent?.34:1})},[active,transparent])
- useEffect(()=>{const s=sceneRef.current;if(!s)return;s.controls.reset();s.group.rotation.y=0;if(view==='front'){s.camera.position.set(0,1.25,6);s.controls.target.set(0,1.25,0)}if(view==='back'){s.camera.position.set(0,1.25,-6);s.controls.target.set(0,1.25,0)}if(view==='left'){s.camera.position.set(-6,1.25,0);s.controls.target.set(0,1.25,0)}if(view==='right'){s.camera.position.set(6,1.25,0);s.controls.target.set(0,1.25,0)}s.camera.lookAt(0,1.25,0)},[resetToken,view])
- return <div ref={ref} className="scene"/>
+  const el=ref.current;let disposed=false,frame=0
+  let renderer,scene,camera,controls,group,atlas,parts=[],meshes=[],pickers=[],materials=[],partTexture,selectionTexture
+  const init=async()=>{
+   try{
+    atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
+    scene=new THREE.Scene();scene.background=new THREE.Color(0x07111f)
+    camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
+    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})
+    renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
+    controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.target.set(0,.85,0);controls.minDistance=.08;controls.maxDistance=30
+    scene.add(new THREE.HemisphereLight(0xffffff,0x172033,1.9))
+    const key=new THREE.DirectionalLight(0xffffff,2.8);key.position.set(3,5,4);scene.add(key)
+    const rim=new THREE.DirectionalLight(0x759bc0,1.5);rim.position.set(-4,2,-4);scene.add(rim)
+    group=new THREE.Group();scene.add(group)
+    const width=THREE.MathUtils.ceilPowerOfTwo(parts.length),data=new Float32Array(width*4),selectedData=new Uint8Array(width*4)
+    partTexture=new THREE.DataTexture(data,width,1,THREE.RGBAFormat,THREE.FloatType);partTexture.needsUpdate=true
+    selectionTexture=new THREE.DataTexture(selectedData,width,1);selectionTexture.needsUpdate=true
+    const makeMaterial=system=>{
+     const m=new THREE.MeshStandardMaterial({color:systemMap[system]?.color||0xaebbb8,roughness:.58,metalness:.04,transparent:true,opacity:1,side:THREE.DoubleSide})
+     m.onBeforeCompile=shader=>{
+      shader.uniforms.partState={value:partTexture};shader.uniforms.selectionState={value:selectionTexture};shader.uniforms.stateWidth={value:width}
+      shader.vertexShader='attribute float partIndex; uniform sampler2D partState; uniform sampler2D selectionState; uniform float stateWidth; varying float partVisible; varying float partSelected;\\n'+shader.vertexShader
+      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\\nvec2 uvState=vec2((partIndex+0.5)/stateWidth,0.5);vec4 st=texture2D(partState,uvState);transformed+=st.xyz;partVisible=st.w;partSelected=texture2D(selectionState,uvState).r;')
+      shader.fragmentShader='varying float partVisible; varying float partSelected;\\n'+shader.fragmentShader
+      shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\\nif(partVisible<0.5)discard;')
+      shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.28,0.85,0.76),partSelected*0.8);')
+     }
+     materials.push(m);return m
+    }
+    const mats=new Map(systems.map(s=>[s.id,makeMaterial(s.id)]))
+    let loaded=0
+    for(let ci=0;ci<atlas.chunks.length;ci++){
+     const c=atlas.chunks[ci],compressed=!!c.gzip&&typeof DecompressionStream!=='undefined'
+     const response=await fetch(compressed?c.gzip:c.url),buffer=await decode(response,c.bytes,compressed),groups=new Map()
+     parts.forEach((p,i)=>{
+      if(p.chunk!==ci)return
+      const g=new THREE.BufferGeometry()
+      g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(buffer,p.positions,p.vertexCount*3),3))
+      g.setAttribute('normal',new THREE.BufferAttribute(new Int16Array(buffer,p.normals,p.vertexCount*3),3,true))
+      g.setIndex(new THREE.BufferAttribute(new Uint32Array(buffer,p.indices,p.indexCount),1))
+      g.setAttribute('partIndex',new THREE.BufferAttribute(new Float32Array(p.vertexCount).fill(i),1))
+      g.computeBoundingSphere()
+      const picker=new THREE.Mesh(g);picker.visible=false;pickers[i]=picker;group.add(picker)
+      const arr=groups.get(p.system)||[];arr.push(g);groups.set(p.system,arr)
+     })
+     groups.forEach((gs,system)=>{const merged=mergeGeometries(gs,false);if(!merged)return;const mesh=new THREE.Mesh(merged,mats.get(system)||mats.get('connective'));mesh.frustumCulled=false;group.add(mesh);meshes.push(mesh)})
+     loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
+    }
+    modelRef.current={atlas,parts,data,selectedData,width,partTexture,selectionTexture,camera,controls,group}
+    const ray=new THREE.Raycaster(),mouse=new THREE.Vector2()
+    const click=e=>{
+     const r=renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera)
+     let hit=null,dist=Infinity
+     pickers.forEach((p,i)=>{if(!p)return;const h=ray.intersectObject(p,false)[0];if(h&&h.distance<dist){dist=h.distance;hit=i}})
+     if(hit!==null)onSelect(parts[hit])
+    }
+    renderer.domElement.addEventListener('click',click)
+    const resize=()=>{camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight)}
+    window.addEventListener('resize',resize)
+    const animate=()=>{
+     if(disposed)return;frame=requestAnimationFrame(animate)
+     const st=modelRef.current
+     if(st){
+      parts.forEach((p,i)=>{data[i*4+3]=active[p.system]?1:0;selectedData[i*4]=selected?.id===p.id?255:0})
+      partTexture.needsUpdate=true;selectionTexture.needsUpdate=true
+      const v=view==='back'?[0,1,-4.2]:view==='left'?[-4.2,1,0]:view==='right'?[4.2,1,0]:[0,1,4.2]
+      camera.position.lerp(new THREE.Vector3(...v),.08);controls.target.set(0,.85,0)
+      group.rotation.y=autoRotate?group.rotation.y+.0018:group.rotation.y
+      controls.update();renderer.render(scene,camera)
+     }
+    }
+    animate()
+    return()=>{renderer.domElement.removeEventListener('click',click);window.removeEventListener('resize',resize)}
+   }catch(e){if(!disposed)setError(e instanceof Error?e.message:'No se pudo cargar el modelo anatómico.')}
+  }
+  init()
+  return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());pickers.forEach(m=>m?.geometry.dispose());materials.forEach(m=>m.dispose());partTexture?.dispose();selectionTexture?.dispose()}
+ },[active,autoRotate,selected,view])
+ useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0}},[resetToken])
+ return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
 }
-
 export default function App(){
- const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true])))
- const [selected,setSelected]=useState(null),[search,setSearch]=useState(''),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false)
- const visible=Object.entries(structures).filter(([name,d])=>name.toLowerCase().includes(search.toLowerCase())&&active[d.system])
- const select=(name,system)=>setSelected({name,system})
- const selectedData=selected?structures[selected.name]:null
+ const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[search,setSearch]=useState(''),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0)
+ const toggle=id=>setActive(a=>({...a,[id]:!a[id]}))
  return <div className="app">
-  <header><div><div className="eyebrow">ANATOMÍA 3D · ATLAS PERSONAL</div><h1>Atlas humano interactivo</h1><p>Explora sistemas, estructuras y relaciones anatómicas en 3D.</p></div><div className="header-actions"><button onClick={()=>setStudy(!study)} className={study?'primary':''}>Modo estudio</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button><span className="badge">EDUCATIVO · OFFLINE READY</span></div></header>
+  <header><div><div className="eyebrow">ANATOMÍA 3D · ATLAS PERSONAL</div><h1>Atlas humano interactivo</h1><p>Modelo anatómico real basado en BodyParts3D 4.0.</p></div><div className="header-actions"><button onClick={()=>setStudy(!study)} className={study?'primary':''}>Modo estudio</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button><span className="badge">{progress<100?'CARGANDO '+progress+'%':'MODELO 3D CARGADO'}</span></div></header>
   <main>
-   <aside className="left panel"><div className="panel-title">Sistemas</div><div className="search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar estructura..."/></div>
-   <div className="systems">{systems.map(s=><button className={active[s.id]?'system active':'system'} key={s.id} onClick={()=>setActive(a=>({...a,[s.id]:!a[s.id]}))}><span className="icon">{s.icon}</span><span>{s.name}</span><i/></button>)}</div>
+   <aside className="left panel"><div className="panel-title">Sistemas anatómicos</div><div className="search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar estructura..."/></div><div className="search-hint">Catálogo real · 2.234 estructuras</div>
+   <div className="systems">{systems.map(s=><button className={active[s.id]?'system active':'system'} key={s.id} onClick={()=>toggle(s.id)}><span className="icon">{s.icon}</span><span>{s.name}</span><i/></button>)}</div>
    <div className="tip"><strong>Herramientas</strong><label><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/> Transparencia</label><label><input type="checkbox" checked={autoRotate} onChange={e=>setAutoRotate(e.target.checked)}/> Rotación automática</label></div>
-   <div className="tip"><strong>Estructuras</strong>{visible.slice(0,8).map(([name])=><button className="mini" key={name} onClick={()=>select(name,structures[name].system)}>{name}</button>)}</div></aside>
-   <section className="viewer"><AnatomyScene active={active} onSelect={select} resetToken={reset} transparent={transparent} autoRotate={autoRotate} view={view}/>
-    <div className="viewbar"><button className={view==='front'?'selected':''} onClick={()=>setView('front')}>Frontal</button><button className={view==='back'?'selected':''} onClick={()=>setView('back')}>Posterior</button><button className={view==='left'?'selected':''} onClick={()=>setView('left')}>Lateral</button></div>
-    <div className="viewer-label"><span className="dot"/>3D interactivo · arrastra para rotar · rueda para zoom</div>
+   </aside>
+   <section className="viewer"><AnatomyScene active={active} onSelect={setSelected} resetToken={reset} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress}/>
+    <div className="viewbar"><button className={view==='front'?'selected':''} onClick={()=>setView('front')}>Frontal</button><button className={view==='back'?'selected':''} onClick={()=>setView('back')}>Posterior</button><button className={view==='left'?'selected':''} onClick={()=>setView('left')}>Lateral</button><button className={view==='right'?'selected':''} onClick={()=>setView('right')}>Derecha</button></div>
+    <div className="viewer-label"><span className="dot"/>Modelo BodyParts3D · arrastra para rotar · rueda para zoom</div>
    </section>
-   <aside className="right panel">{study?<div className="study"><div className="kicker">MODO ESTUDIO</div><h2>Identifica la estructura</h2><p>Selecciona una estructura del modelo. El atlas mostrará su sistema y función para ayudarte a estudiar.</p><div className="study-card">{selected?<><strong>{selected.name}</strong><span>{selectedData?.region}</span><small>{selectedData?.function}</small></>:<><strong>Haz clic en el modelo</strong><span>Comienza una identificación</span></>}</div><button className="primary full" onClick={()=>setReset(x=>x+1)}>Nueva vista</button></div>:selected?<><div className="kicker">ESTRUCTURA SELECCIONADA</div><h2>{selected.name}</h2><div className="tag">{systems.find(s=>s.id===selected.system)?.name}</div><div className="facts"><div><span>Región</span><strong>{selectedData?.region}</strong></div><div><span>Función</span><strong>{selectedData?.function}</strong></div></div><div className="section"><div className="panel-title">Información anatómica</div><p>Esta ficha es una base educativa. En la siguiente fase añadiremos origen, inserción, inervación, irrigación, relaciones y referencias.</p></div></>:<div className="empty"><div className="empty-icon">✦</div><h2>Selecciona una estructura</h2><p>Haz clic sobre el modelo o usa la búsqueda para abrir su ficha anatómica.</p></div>}</aside>
+   <aside className="right panel">{study?<div className="study"><div className="kicker">MODO ESTUDIO</div><h2>Identifica la estructura</h2><p>Haz clic directamente sobre una estructura anatómica del modelo.</p><div className="study-card">{selected?<><strong>{selected.name}</strong><span>{systemMap[selected.system]?.name}</span><small>{explain(selected.name,selected.system)}</small></>:<><strong>Selecciona una estructura</strong><span>Haz clic sobre el modelo 3D</span></>}</div><button className="primary full" onClick={()=>setReset(x=>x+1)}>Nueva vista</button></div>:selected?<><div className="kicker">ESTRUCTURA SELECCIONADA</div><h2>{selected.name}</h2><div className="tag">{systemMap[selected.system]?.name}</div><div className="facts"><div><span>Sistema</span><strong>{systemMap[selected.system]?.name}</strong></div><div><span>Función / referencia</span><strong>{explain(selected.name,selected.system)}</strong></div></div><div className="section"><div className="panel-title">Fuente anatómica</div><p>{MODEL_SOURCE}. El conjunto utilizado es un modelo de referencia masculino adulto y tiene finalidad educativa.</p></div></>:<div className="empty"><div className="empty-icon">✦</div><h2>Selecciona una estructura</h2><p>Haz clic directamente sobre el modelo anatómico real.</p></div>}</aside>
   </main>
-  <footer><span>Anatomía 3D · Proyecto educativo personal</span><span>Modelos y datos abiertos con atribución. No sustituye formación médica.</span></footer>
+  <footer><span>Anatomía 3D · Proyecto educativo personal</span><span>BodyParts3D 4.0 · CC BY 4.0 · DBCLS</span></footer>
  </div>
 }
