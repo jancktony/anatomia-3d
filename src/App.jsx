@@ -184,6 +184,23 @@ async function decode(response,expected,compressed){
  if(expected&&buffer.byteLength!==expected)throw new Error('Una capa anatómica llegó incompleta.')
  return buffer
 }
+async function loadAtlasChunk(c){
+ const compressed=!!c.gzipUrls?.length&&typeof DecompressionStream!=='undefined'
+ const urls=compressed?c.gzipUrls:c.urls
+ const key=urls[0]
+ if(!key)throw new Error('Capa anatómica sin archivo asociado.')
+ if(anatomyBufferCache.has(key))return anatomyBufferCache.get(key)
+ const promise=(async()=>{
+  const response=await fetchFirst(urls)
+  return decode(response,c.bytes,compressed)
+ })()
+ anatomyBufferCache.set(key,promise)
+ return promise
+}
+async function preloadAtlas(atlas){
+ await Promise.all((atlas.chunks||[]).map(loadAtlasChunk))
+ return atlas
+}
 function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress,isolate,explode,onCatalog,region,bodySex,sectionCut}){
  const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
  const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),regionRef=useRef(region),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode),bodySexRef=useRef(bodySex),sectionCutRef=useRef(sectionCut)
@@ -261,9 +278,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     }
     let loaded=0
     for(let ci=0;ci<atlas.chunks.length;ci++){
-     const c=atlas.chunks[ci],compressed=!!c.gzipUrls?.length&&typeof DecompressionStream!=='undefined'
-     const urls=compressed?c.gzipUrls:c.urls
-     const response=await fetchFirst(urls),buffer=await decode(response,c.bytes,compressed),groups=new Map()
+     const c=atlas.chunks[ci],buffer=await loadAtlasChunk(c),groups=new Map()
      parts.forEach((p,i)=>{
       if(p.chunk!==ci)return
       const g=new THREE.BufferGeometry()
@@ -563,7 +578,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
   }
   // Precarga ambos atlas desde el primer montaje. El cambio masculino/femenino
   // reutiliza estos recursos en caché y no vuelve a descargar las capas anatómicas.
-  Promise.all([loadAtlas('male'),loadAtlas('female'),loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>{})
+  Promise.all([loadAtlas('male'),loadAtlas('female'),loadDetailedMuscles(),loadDetailedSkeleton()]).then(([male,female])=>Promise.all([preloadAtlas(male),preloadAtlas(female)])).catch(()=>{})
   init()
   return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());detailedMeshes.forEach(m=>m.geometry.dispose());materials.forEach(m=>m.dispose())}
  },[bodySex])
