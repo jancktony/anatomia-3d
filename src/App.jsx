@@ -416,6 +416,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       geometry.computeBoundingBox();geometry.computeBoundingSphere()
      }
      const rawMapping=detailed.mapping||[]
+     detailedParts=rawMapping.map((entry,i)=>({...entry,id:entry.id||`muscle-${i}`,name:spanishAnatomyName(entry.name||entry.originalName||`Músculo ${i+1}`),originalName:entry.originalName||entry.name,description:anatomyDescription(entry.name,'muscular')}))
      const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\s+/g,' ').trim()
      const mappingQueues=new Map()
      rawMapping.forEach((entry,i)=>{
@@ -430,7 +431,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       const key=normalizeName(node.name)
       const queue=mappingQueues.get(key)||[]
       const raw=queue.length?queue.shift():rawMapping[idx]
-      const meta0=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
+      const meta0=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:spanishAnatomyName(node.name||`Músculo ${idx+1}`),system:'muscular'}
       const meta={...meta0,name:spanishAnatomyName(meta0.name),originalName:meta0.name,description:anatomyDescription(meta0.name,meta0.system)}
       const geometry=node.geometry.clone()
       transformDetailedGeometry(geometry)
