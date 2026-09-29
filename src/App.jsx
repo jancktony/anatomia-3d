@@ -84,195 +84,10 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
   const init=async()=>{
    try{
     atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
-    let detailed=null,detailedSkeleton=null
-    try{[detailed,detailedSkeleton]=await Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()])}catch(_){detailed=null;detailedSkeleton=null}
-    if(disposed)return
-    if(detailed){
-     detailedParts=detailed.mapping.map((p,i)=>({
-      id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
-      name:p.name||p.originalName||`Músculo ${i+1}`,
-      originalName:p.originalName||p.name||'',
-      system:'muscular',
-      source:'Z-Anatomy / BodyExplorer',
-      isTendon:!!p.isTendon,
-      fmaId:p.fmaId||'',
-      bpId:p.bpId||''
-     }))
-    }
-    onCatalog?.([...detailedParts,...parts])
-    scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
-    camera=new THREE.PerspectiveCamera(34,1,.01,100);camera.position.set(0,1,4.2)
-    const mobile=window.matchMedia('(max-width: 650px)').matches
-    renderer=new THREE.WebGLRenderer({antialias:!mobile,powerPreference:'high-performance',preserveDrawingBuffer:false})
-    renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.25:1.7));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(el.clientWidth,el.clientHeight);el.appendChild(renderer.domElement)
-    controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.08;controls.enableZoom=true;controls.zoomToCursor=true;controls.screenSpacePanning=false;controls.target.set(0,.85,0);controls.minDistance=.08;controls.maxDistance=30
-    scene.add(new THREE.HemisphereLight(0xfff4f8,0x26131d,2.15))
-    const key=new THREE.DirectionalLight(0xfff7fb,3.1);key.position.set(3,5,4);scene.add(key)
-    const fill=new THREE.DirectionalLight(0xffc3d8,1.05);fill.position.set(-4,2,3);scene.add(fill)
-    const rim=new THREE.DirectionalLight(0x8ca9d8,1.35);rim.position.set(-4,3,-4);scene.add(rim)
-    group=new THREE.Group();scene.add(group)
-    detailedGroup=new THREE.Group();scene.add(detailedGroup)
-    const realisticColors={
-     skeletal:0xe7dcc8,muscular:0xa9443f,cardiac:0xb52f3d,arterial:0xc73b3f,
-     venous:0x416fa3,nervous:0xd3a84f,respiratory:0xc98b92,digestive:0xb56e54,
-     urinary:0x9c6b58,lymphatic:0x789b72,endocrine:0xc28d9d,reproductive:0xb77d73,
-     connective:0xb6a58e,sensory:0x9abdc8
-    }
-    const realisticFinish={
-     skeletal:{roughness:.72,metalness:.01},
-     muscular:{roughness:.7,metalness:.005,clearcoat:.08,clearcoatRoughness:.72,sheen:.12},
-     cardiac:{roughness:.56,metalness:.01},
-     arterial:{roughness:.48,metalness:.02},
-     venous:{roughness:.52,metalness:.02},
-     nervous:{roughness:.58,metalness:.01},
-     respiratory:{roughness:.66,metalness:0},
-     digestive:{roughness:.62,metalness:0},
-     urinary:{roughness:.6,metalness:0},
-     lymphatic:{roughness:.64,metalness:0},
-     endocrine:{roughness:.58,metalness:0},
-     reproductive:{roughness:.6,metalness:0},
-     connective:{roughness:.72,metalness:0},
-     sensory:{roughness:.5,metalness:0}
-    }
-    const makeMaterial=system=>{
-     const finish=realisticFinish[system]||{}
-     const material=system==='muscular'
-      ? new THREE.MeshPhysicalMaterial({color:realisticColors[system]??0xd6b8c2,roughness:finish.roughness??.6,metalness:finish.metalness??0,clearcoat:finish.clearcoat??0,clearcoatRoughness:finish.clearcoatRoughness??.8,sheen:finish.sheen??0,sheenColor:new THREE.Color(0x5b0d18),side:THREE.DoubleSide})
-      : new THREE.MeshStandardMaterial({color:realisticColors[system]??0xd6b8c2,roughness:finish.roughness??.6,metalness:finish.metalness??0,side:THREE.DoubleSide})
-     return material
-    }
-    const mats=new Map(systems.map(s=>[s.id,makeMaterial(s.id)]))
-    let loaded=0
-    for(let ci=0;ci<atlas.chunks.length;ci++){
-     const c=atlas.chunks[ci],compressed=!!c.gzipUrls?.length&&typeof DecompressionStream!=='undefined'
-     const urls=compressed?c.gzipUrls:c.urls
-     const response=await fetchFirst(urls),buffer=await decode(response,c.bytes,compressed),groups=new Map()
-     parts.forEach((p,i)=>{
-      if(p.chunk!==ci)return
-      const g=new THREE.BufferGeometry()
-      g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(buffer,p.positions,p.vertexCount*3),3))
-      g.setAttribute('normal',new THREE.BufferAttribute(new Int16Array(buffer,p.normals,p.vertexCount*3),3,true))
-      g.setIndex(new THREE.BufferAttribute(new Uint32Array(buffer,p.indices,p.indexCount),1))
-      g.setAttribute('partIndex',new THREE.BufferAttribute(new Float32Array(p.vertexCount).fill(i),1))
-      g.computeBoundingSphere()
-      const arr=groups.get(p.system)||[];arr.push(g);groups.set(p.system,arr)
-     })
-     groups.forEach((gs,system)=>{
-      const merged=mergeGeometries(gs,false)
-      if(!merged)return
-      merged.computeBoundingSphere()
-      const mesh=new THREE.Mesh(merged,mats.get(system)||mats.get('connective'))
-      if(system==='muscular'){
-       mesh.material.userData.muscleShader=true
-       mesh.material.onBeforeCompile=shader=>{
-        shader.uniforms.uSelectedPart={value:-1}
-        shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float partIndex;\nvarying float vPartIndex;')
-        shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvPartIndex=partIndex;')
-        shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying float vPartIndex;\nuniform float uSelectedPart;\nfloat muscleHash(float n){return fract(sin(n*12.9898)*43758.5453);}')
-        shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat mv=muscleHash(vPartIndex);\nvec3 muscleTint=mix(vec3(0.62,0.09,0.12),vec3(0.88,0.30,0.30),mv*0.72);\ndiffuseColor.rgb*=muscleTint;\nif(abs(vPartIndex-uSelectedPart)<0.5){diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.0,0.32,0.62),0.72);}')
-        mesh.material.userData.shader=shader
-       }
-      }
-      mesh.frustumCulled=false
-      mesh.userData.system=system
-      group.add(mesh)
-      meshes.push(mesh)
-     })
-     loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
-    }
-    if(detailed){
-     const sourceRoot=detailed.gltf.scene
-     const sourceBox=new THREE.Box3().setFromObject(sourceRoot)
-     const sourceCenter=sourceBox.getCenter(new THREE.Vector3())
-     const sourceSize=sourceBox.getSize(new THREE.Vector3())
-     const sourceScale=30/Math.max(sourceSize.z,1)
-     const transformDetailedGeometry=geometry=>{
-      const pos=geometry.getAttribute('position')
-      const normal=geometry.getAttribute('normal')
-      if(pos){
-       const a=pos.array
-       for(let i=0;i<a.length;i+=3){
-        const x=a[i],y=a[i+1],z=a[i+2]
-        a[i]=(x-sourceCenter.x)*sourceScale
-        a[i+1]=(z-sourceCenter.z)*sourceScale
-        a[i+2]=-(y-sourceCenter.y)*sourceScale
-       }
-       pos.needsUpdate=true
-      }
-      if(normal){
-       const a=normal.array
-       for(let i=0;i<a.length;i+=3){
-        const x=a[i],y=a[i+1],z=a[i+2]
-        a[i]=x
-        a[i+1]=z
-        a[i+2]=-y
-       }
-       normal.needsUpdate=true
-      }
-      geometry.computeBoundingBox();geometry.computeBoundingSphere()
-     }
-     const rawMapping=detailed.mapping||[]
-     const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\s+/g,' ').trim()
-     const mappingQueues=new Map()
-     rawMapping.forEach((entry,i)=>{
-      const key=normalizeName(entry.name||entry.originalName)
-      const queue=mappingQueues.get(key)||[]
-      queue.push({...entry,_sourceIndex:i})
-      mappingQueues.set(key,queue)
-     })
-     detailed.gltf.scene.traverse(node=>{
-      if(!node.isMesh)return
-      const idx=detailedMeshes.length
-      const key=normalizeName(node.name)
-      const queue=mappingQueues.get(key)||[]
-      const raw=queue.length?queue.shift():rawMapping[idx]
-      const meta=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
-      const geometry=node.geometry.clone()
-      transformDetailedGeometry(geometry)
-      const material=new THREE.MeshPhysicalMaterial({
-       color:meta.isTendon?0xe2c8b4:0xb83f45,
-       roughness:meta.isTendon?.62:.58,
-       metalness:0,
-       clearcoat:.12,
-       clearcoatRoughness:.7,
-       sheen:.18,
-       sheenColor:new THREE.Color(0x64121d),
-       side:THREE.DoubleSide
-      })
-      const mesh=new THREE.Mesh(geometry,material)
-      mesh.name=meta.name
-      mesh.userData={system:'muscular',detailIndex:idx,part:meta,isDetailedMuscle:true}
-      mesh.castShadow=false
-      mesh.receiveShadow=true
-      detailedGroup.add(mesh)
-      detailedMeshes.push(mesh)
-      materials.push(material)
-     })
-     detailedGroup.updateMatrixWorld(true)
-     if(detailedSkeleton){
-      detailedSkeleton.scene.traverse(node=>{
-       if(!node.isMesh)return
-       const geometry=node.geometry.clone()
-       transformDetailedGeometry(geometry)
-       const material=new THREE.MeshPhysicalMaterial({
-        color:0xe6dcc9,roughness:.7,metalness:0,clearcoat:.08,
-        clearcoatRoughness:.78,side:THREE.DoubleSide,
-        transparent:true,opacity:.86,depthWrite:true
-       })
-       const mesh=new THREE.Mesh(geometry,material)
-       mesh.name=node.name||'Hueso'
-       mesh.userData={system:'skeletal',isDetailedSkeleton:true}
-       detailedGroup.add(mesh);detailedMeshes.push(mesh);materials.push(material)
-      })
-     }
-     const atlasMuscle=meshes.filter(m=>m.userData.system==='muscular')
-     atlasMuscle.forEach(m=>m.visible=false)
-    }
+    onCatalog?.(parts)
     const atlasBounds=new THREE.Box3().setFromObject(group)
     const center=atlasBounds.getCenter(new THREE.Vector3())
-    if(detailedGroup&&detailedMeshes.length){detailedGroup.position.copy(center)}
     const bounds=new THREE.Box3().setFromObject(group)
-    if(detailedGroup&&detailedMeshes.length)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
     const sphere=bounds.getBoundingSphere(new THREE.Sphere())
     const radius=Math.max(sphere.radius,.5)
     controls.target.copy(center)
@@ -314,7 +129,6 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
     let appliedView='front'
     const setViewPosition=which=>{
      const bounds=new THREE.Box3().setFromObject(group)
-     if(detailedGroup&&detailedMeshes.length)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
      const center=bounds.getCenter(new THREE.Vector3())
      const sphere=bounds.getBoundingSphere(new THREE.Sphere())
      const radius=Math.max(sphere.radius,.5)
@@ -365,6 +179,44 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      }
     }
     animate()
+    const loadDeferredDetailed=async()=>{
+     try{
+      const [detailed,detailedSkeleton]=await Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()])
+      if(disposed)return
+     
+          detailedParts=detailed.mapping.map((p,i)=>({
+           id:`muscle-${i}-${p.fmaId||p.bpId||i}`,
+           name:p.name||p.originalName||`Músculo ${i+1}`,
+           originalName:p.originalName||p.name||'',
+           system:'muscular',
+           source:'Z-Anatomy / BodyExplorer',
+           isTendon:!!p.isTendon,
+           fmaId:p.fmaId||'',
+           bpId:p.bpId||''
+          }))
+         
+      if(detailedGroup&&detailedMeshes.length){
+       const detailedBounds=new THREE.Box3().setFromObject(detailedGroup)
+       const detailedCenter=detailedBounds.getCenter(new THREE.Vector3())
+       detailedGroup.position.copy(center).sub(detailedCenter)
+       detailedGroup.updateMatrixWorld(true)
+       const allBounds=new THREE.Box3().setFromObject(group)
+       allBounds.union(new THREE.Box3().setFromObject(detailedGroup))
+       const allSphere=allBounds.getBoundingSphere(new THREE.Sphere())
+       const allRadius=Math.max(allSphere.radius,.5)
+       camera.near=Math.max(.01,allRadius/1000)
+       camera.far=Math.max(100,allRadius*8)
+       camera.updateProjectionMatrix()
+       controls.maxDistance=Math.max(allRadius*8,10)
+      }
+      if(modelRef.current)modelRef.current.detailedParts=detailedParts
+      onCatalog?.([...detailedParts,...parts])
+     }catch(_){/* La capa detallada es opcional y no bloquea el atlas base. */}
+    }
+    const scheduleDetailed=window.requestIdleCallback
+     ? cb=>window.requestIdleCallback(cb,{timeout:1800})
+     : cb=>setTimeout(cb,900)
+    scheduleDetailed(()=>loadDeferredDetailed())
     return()=>{renderer.domElement.removeEventListener('click',click);window.removeEventListener('resize',resize)}
    }catch(e){if(!disposed)setError(e instanceof Error?e.message:'No se pudo cargar el modelo anatómico.')}
   }
