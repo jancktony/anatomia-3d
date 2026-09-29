@@ -109,8 +109,8 @@ async function fetchFirst(urls){
  }
  throw lastError||new Error('No se pudo descargar el recurso anatómico.')
 }
-async function loadAtlas(){
- const base=new URL(MODEL_BASE,document.baseURI)
+async function loadAtlas(bodySex='male'){
+ const base=new URL(bodySex==='female'?'./models/female/':MODEL_BASE,document.baseURI)
  const res=await fetchFirst([new URL('atlas.json',base).href])
  const atlas=await res.json()
  atlas.parts=atlas.parts||[]
@@ -150,18 +150,18 @@ async function decode(response,expected,compressed){
  if(expected&&buffer.byteLength!==expected)throw new Error('Una capa anatómica llegó incompleta.')
  return buffer
 }
-function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress,isolate,explode,onCatalog,region}){
+function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress,isolate,explode,onCatalog,region,bodySex}){
  const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
- const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),regionRef=useRef(region),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode)
- activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;regionRef.current=region;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode
+ const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),regionRef=useRef(region),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode),bodySexRef=useRef(bodySex)
+ activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;regionRef.current=region;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode;bodySexRef.current=bodySex
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
   let renderer,scene,camera,controls,group,detailedGroup,atlas,parts=[],meshes=[],detailedMeshes=[],pickers=[],materials=[],detailedParts=[]
   const init=async()=>{
    try{
-    atlas=await loadAtlas();if(disposed)return;parts=atlas.parts
+    atlas=await loadAtlas(bodySex);if(disposed)return;parts=atlas.parts
     let detailed=null,detailedSkeleton=null
-    const detailedPromise=Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>[null,null])
+    const detailedPromise=bodySex==='male'?Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>[null,null]):Promise.resolve([null,null])
     onCatalog?.(parts)
 
     scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
@@ -507,15 +507,17 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
   }
   init()
   return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());detailedMeshes.forEach(m=>m.geometry.dispose());materials.forEach(m=>m.dispose())}
- },[])
+ },[bodySex])
  useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0}},[resetToken])
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
 }
 export default function App(){
- const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[region,setRegion]=useState('full'),[search,setSearch]=useState(''),[catalog,setCatalog]=useState([]),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0),[isolate,setIsolate]=useState(false),[explode,setExplode]=useState(false),[navMode,setNavMode]=useState('regions'),[expandedRegion,setExpandedRegion]=useState('full'),[selectedSubregion,setSelectedSubregion]=useState(null)
+ const [active,setActive]=useState(Object.fromEntries(systems.map(s=>[s.id,true]))),[selected,setSelected]=useState(null),[bodySex,setBodySex]=useState('male'),[quiz,setQuiz]=useState(null),[quizScore,setQuizScore]=useState(()=>Number(localStorage.getItem('anatomia3d-quiz-score')||0)),[quizAnswered,setQuizAnswered]=useState(0),[region,setRegion]=useState('full'),[search,setSearch]=useState(''),[catalog,setCatalog]=useState([]),[reset,setReset]=useState(0),[transparent,setTransparent]=useState(false),[autoRotate,setAutoRotate]=useState(false),[view,setView]=useState('front'),[study,setStudy]=useState(false),[progress,setProgress]=useState(0),[isolate,setIsolate]=useState(false),[explode,setExplode]=useState(false),[navMode,setNavMode]=useState('regions'),[expandedRegion,setExpandedRegion]=useState('full'),[selectedSubregion,setSelectedSubregion]=useState(null)
  const toggle=id=>setActive(a=>({...a,[id]:!a[id]}))
  const matches=search.trim()?catalog.filter(p=>p.name?.toLowerCase().includes(search.trim().toLowerCase())).slice(0,12):[]
  const chooseSearch=p=>{const item={...p,name:spanishAnatomyName(p.name),originalName:p.originalName||p.name,description:p.description||anatomyDescription(p.name,p.system)};setSelected(item);setSearch(item.name||'');setActive(a=>({...a,[item.system]:true}))}
+ const buildQuiz=()=>{const pool=catalog.filter(p=>p?.name&&p.system);if(pool.length<4)return;const target=pool[Math.floor(Math.random()*pool.length)];const distractors=pool.filter(p=>p.id!==target.id&&p.system===target.system).sort(()=>Math.random()-.5).slice(0,3);const fallback=pool.filter(p=>p.id!==target.id&&p.system!==target.system).sort(()=>Math.random()-.5).slice(0,3-distractors.length);const choices=[target,...distractors,...fallback].sort(()=>Math.random()-.5);setSelected(target);setIsolate(true);setQuiz({target,choices,answered:null});setStudy(true)}
+ const answerQuiz=choice=>{if(!quiz||quiz.answered)return;const correct=choice.id===quiz.target.id;setQuiz(q=>({...q,answered:choice.id}));setQuizAnswered(n=>n+1);if(correct)setQuizScore(n=>{const v=n+1;localStorage.setItem('anatomia3d-quiz-score',String(v));return v})}
  const chooseRegion=(section,child=null)=>{
   setRegion(section.id);setExpandedRegion(section.id);setSelectedSubregion(child?.id||null)
   if(section.id==='head'&&child?.id==='face')setActive(a=>({...a,muscular:true,skeletal:false}))
@@ -528,7 +530,7 @@ export default function App(){
   <header className="topbar">
    <div className="brand"><div className="brand-mark">A3</div><div><div className="brand-name">ANATOMÍA <span>3D</span></div><div className="brand-sub">Atlas interactivo</div></div></div>
    <div className="top-search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar músculo, hueso, órgano, nervio..."/><kbd>Ctrl K</kbd></div>
-   <div className="top-actions"><button onClick={()=>setStudy(!study)} className={study?'active':''}>Estudiar</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button></div>
+   <div className="top-actions"><div className="body-switch"><button className={bodySex==='male'?'active':''} onClick={()=>{setBodySex('male');setSelected(null);setQuiz(null)}}>♂ Masculino</button><button className={bodySex==='female'?'active':''} onClick={()=>{setBodySex('female');setSelected(null);setQuiz(null)}}>♀ Femenino</button></div><button onClick={()=>{setStudy(!study);if(!study)buildQuiz()}} className={study?'active':''}>Estudiar</button><button onClick={()=>setReset(x=>x+1)}>Restablecer</button></div>
   </header>
   <div className="workspace">
    <aside className="sidebar left-sidebar">
@@ -570,13 +572,13 @@ export default function App(){
       <div className="toolbar-group"><button onClick={()=>setRegion('full')} className={region==='full'?'selected':''}>Cuerpo entero</button><button onClick={()=>setView('front')} className={view==='front'?'selected':''}>Frontal</button><button onClick={()=>setView('back')} className={view==='back'?'selected':''}>Posterior</button><button onClick={()=>setView('left')} className={view==='left'?'selected':''}>Lateral</button></div>
       <div className="toolbar-group"><button onClick={()=>setAutoRotate(!autoRotate)} className={autoRotate?'selected':''}>↻ Rotar</button><button onClick={()=>setTransparent(!transparent)} className={transparent?'selected':''}>◐ Transparencia</button><button onClick={()=>setExplode(!explode)} className={explode?'selected':''}>✧ Capas</button></div>
     </div>
-    <AnatomyScene active={active} onSelect={setSelected} onCatalog={setCatalog} selected={selected} resetToken={reset} isolate={isolate} explode={explode} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress} region={region}/>
+    <AnatomyScene bodySex={bodySex} active={active} onSelect={setSelected} onCatalog={setCatalog} selected={selected} resetToken={reset} isolate={isolate} explode={explode} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress} region={region}/>
     <div className="viewer-status"><span className="status-dot"/><span>{selectedSubregion?selectedSubregion.replaceAll('-',' ').toUpperCase():region==='full'?'CUERPO COMPLETO':(regionalSections.find(s=>s.id===region)?.name||region).toUpperCase()}</span><span>•</span><span>{progress<100?'Cargando '+progress+'%':'Listo'}</span></div>
     <div className="quick-controls"><button onClick={()=>setReset(x=>x+1)}>⟳</button><button onClick={()=>setView('front')}>●</button><button onClick={()=>setView('back')}>◐</button></div>
    </section>
    <aside className="sidebar detail-sidebar">
     {matches.length>0&&<div className="search-popover"><div className="section-label">RESULTADOS</div>{matches.map(p=><button key={p.id} onClick={()=>chooseSearch(p)}><strong>{p.name}</strong><small>{systemMap[p.system]?.name||p.system}</small></button>)}</div>}
-    {study?<div className="detail-content"><div className="eyebrow">MODO ESTUDIO</div><h2>Identifica la estructura</h2><p>Selecciona una estructura directamente en el modelo.</p><div className="study-card">{selected?<><strong>{selected.name}</strong><span>{systemMap[selected.system]?.name}</span><small>{explain(selected.name,selected.system)}</small></>:<strong>Selecciona una estructura</strong>}</div></div>:selected?<div className="detail-content"><div className="structure-head"><span className="structure-pill">{systemMap[selected.system]?.name}</span><button onClick={()=>setSelected(null)}>×</button></div><h1>{selected.name}</h1><p className="latin">{selected.originalName||'Nombre anatómico'}</p><div className="detail-actions"><button className="primary" onClick={()=>setIsolate(true)}>Aislar</button><button onClick={()=>setIsolate(false)}>Mostrar todo</button></div><div className="info-card"><small>FUNCIÓN / REFERENCIA</small><p>{selected.description||anatomyDescription(selected.name,selected.system)}</p></div><div className="info-card"><small>SISTEMA</small><p>{systemMap[selected.system]?.name}</p></div></div>:<div className="detail-content welcome"><div className="welcome-icon">✦</div><div className="eyebrow">ATLAS 3D</div><h2>Explora el cuerpo humano</h2><p>Selecciona una región, activa un sistema y toca cualquier estructura para conocerla.</p><div className="feature-row"><span>01</span><b>Regiones</b></div><div className="feature-row"><span>02</span><b>Capas anatómicas</b></div><div className="feature-row"><span>03</span><b>Selección individual</b></div></div>}
+    {study?<div className="detail-content"><div className="eyebrow">MODO ESTUDIO 3D</div><h2>Entrenamiento anatómico</h2><p>Identifica la estructura resaltada en el modelo.</p>{quiz?<div className="quiz-card"><div className="quiz-meta"><span>Pregunta {quizAnswered+1}</span><b>{quizScore} aciertos</b></div><strong className="quiz-prompt">¿Qué estructura está seleccionada?</strong><div className="quiz-choices">{quiz.choices.map(choice=><button key={choice.id} className={quiz.answered?(choice.id===quiz.target.id?'correct':choice.id===quiz.answered?'wrong':''):' '} onClick={()=>answerQuiz(choice)}>{choice.name}</button>)}</div>{quiz.answered&&<div className={quiz.answered===quiz.target.id?'quiz-result correct':'quiz-result wrong'}>{quiz.answered===quiz.target.id?'Correcto.':'Incorrecto.'} <b>{quiz.target.name}</b><small>{quiz.target.description||anatomyDescription(quiz.target.name,quiz.target.system)}</small><button onClick={buildQuiz}>Siguiente pregunta</button></div>}</div>:<button className="primary study-start" onClick={buildQuiz}>Comenzar entrenamiento</button>}<div className="study-card"><strong>{bodySex==='female'?'Atlas femenino':'Atlas masculino'}</strong><span>{catalog.length.toLocaleString('es-CO')} estructuras cargadas</span><small>Las respuestas y el puntaje se guardan localmente en este navegador.</small></div></div>:selected?<div className="detail-content"><div className="structure-head"><span className="structure-pill">{systemMap[selected.system]?.name}</span><button onClick={()=>setSelected(null)}>×</button></div><h1>{selected.name}</h1><p className="latin">{selected.originalName||'Nombre anatómico'}</p><div className="detail-actions"><button className="primary" onClick={()=>setIsolate(true)}>Aislar</button><button onClick={()=>setIsolate(false)}>Mostrar todo</button></div><div className="info-card"><small>FUNCIÓN / REFERENCIA</small><p>{selected.description||anatomyDescription(selected.name,selected.system)}</p></div><div className="info-card"><small>SISTEMA</small><p>{systemMap[selected.system]?.name}</p></div></div>:<div className="detail-content welcome"><div className="welcome-icon">✦</div><div className="eyebrow">ATLAS 3D</div><h2>Explora el cuerpo humano</h2><p>Selecciona una región, activa un sistema y toca cualquier estructura para conocerla.</p><div className="feature-row"><span>01</span><b>Regiones</b></div><div className="feature-row"><span>02</span><b>Capas anatómicas</b></div><div className="feature-row"><span>03</span><b>Selección individual</b></div></div>}
    </aside>
   </div>
   <footer className="atlas-footer"><span>Anatomía 3D</span><span>Modelo educativo independiente · {MODEL_SOURCE}</span><span>{catalog.length.toLocaleString('es-CO')} estructuras catalogadas</span></footer>
