@@ -173,12 +173,47 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100))
     }
     if(detailed){
+     const rawMapping=detailed.mapping||[]
+     const normalizeName=value=>String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ() -]/gi,' ').replace(/\\s+/g,' ').trim()
+     const mappingQueues=new Map()
+     rawMapping.forEach((entry,i)=>{
+      const key=normalizeName(entry.name||entry.originalName)
+      const queue=mappingQueues.get(key)||[]
+      queue.push({...entry,_sourceIndex:i})
+      mappingQueues.set(key,queue)
+     })
      detailed.gltf.scene.traverse(node=>{
       if(!node.isMesh)return
       const idx=detailedMeshes.length
-      const meta=detailedParts[idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
-      const source=node
-      const geometry=source.geometry.clone()
+      const key=normalizeName(node.name)
+      const queue=mappingQueues.get(key)||[]
+      const raw=queue.length?queue.shift():rawMapping[idx]
+      const meta=detailedParts[raw?raw._sourceIndex:idx]||{id:`muscle-${idx}`,name:node.name||`Músculo ${idx+1}`,system:'muscular'}
+      const geometry=node.geometry.clone()
+      const pos=geometry.getAttribute('position')
+      const normal=geometry.getAttribute('normal')
+      if(pos){
+       const a=pos.array
+       for(let i=0;i<a.length;i+=3){
+        const x=a[i],y=a[i+1],z=a[i+2]
+        a[i]=x*.001
+        a[i+1]=z*.001+.0781112
+        a[i+2]=-y*.001-.1
+       }
+       pos.needsUpdate=true
+      }
+      if(normal){
+       const a=normal.array
+       for(let i=0;i<a.length;i+=3){
+        const x=a[i],y=a[i+1],z=a[i+2]
+        a[i]=x
+        a[i+1]=z
+        a[i+2]=-y
+       }
+       normal.needsUpdate=true
+      }
+      geometry.computeBoundingBox()
+      geometry.computeBoundingSphere()
       const material=new THREE.MeshPhysicalMaterial({
        color:meta.isTendon?0xe2c8b4:0xb83f45,
        roughness:meta.isTendon?.62:.58,
