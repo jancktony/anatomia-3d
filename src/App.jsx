@@ -36,7 +36,7 @@ async function decode(response,expected,compressed){
  if(expected&&buffer.byteLength!==expected)throw new Error('Una capa anatómica llegó incompleta.')
  return buffer
 }
-function AnatomyScene({active,onSelect,resetToken,transparent,autoRotate,view,onProgress}){
+function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress}){
  const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
@@ -130,7 +130,7 @@ export default function App(){
    <div className="systems">{systems.map(s=><button className={active[s.id]?'system active':'system'} key={s.id} onClick={()=>toggle(s.id)}><span className="icon">{s.icon}</span><span>{s.name}</span><i/></button>)}</div>
    <div className="tip"><strong>Herramientas</strong><label><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/> Transparencia</label><label><input type="checkbox" checked={autoRotate} onChange={e=>setAutoRotate(e.target.checked)}/> Rotación automática</label></div>
    </aside>
-   <section className="viewer"><AnatomyScene active={active} onSelect={setSelected} resetToken={reset} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress}/>
+   <section className="viewer"><AnatomyScene active={active} onSelect={setSelected} selected={selected} resetToken={reset} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress}/>
     <div className="viewbar"><button className={view==='front'?'selected':''} onClick={()=>setView('front')}>Frontal</button><button className={view==='back'?'selected':''} onClick={()=>setView('back')}>Posterior</button><button className={view==='left'?'selected':''} onClick={()=>setView('left')}>Lateral</button><button className={view==='right'?'selected':''} onClick={()=>setView('right')}>Derecha</button></div>
     <div className="viewer-label"><span className="dot"/>Modelo BodyParts3D · arrastra para rotar · rueda para zoom</div>
    </section>
