@@ -416,6 +416,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
        let visible=systemVisible
        if(system==='muscular' && detailedMeshes.length) visible=false
        if(isolateRef.current && selectedRef.current){ const selectedName=normalizeCatalogName(selectedRef.current.name||selectedRef.current.originalName); const meshName=normalizeCatalogName(mesh.userData.part?.name||mesh.userData.part?.originalName); visible=systemVisible && system===selectedRef.current.system && (system!=='muscular'||meshName===selectedName)
+        }
        mesh.visible=visible
        if(mesh.visible){
         if(!explosionTargets.has(mesh))explosionTargets.set(mesh,mesh.position.clone())
