@@ -91,6 +91,20 @@ const structureFacts={
  'cuádriceps femoral':{latin:'Musculus quadriceps femoris',location:'Compartimento anterior del muslo',origin:'Fémur y pelvis según cada cabeza muscular',insertion:'Rótula, ligamento patelar y tuberosidad tibial',function:'Extensión de la rodilla; el recto femoral también participa en la flexión de la cadera',innervation:'Nervio femoral (L2–L4)',bloodSupply:'Ramas de las arterias femoral y circunfleja femoral lateral',relations:'Anterior al fémur y relacionado con el compartimento anterior',clinical:'Las lesiones musculotendinosas pueden reducir la extensión activa de la rodilla'},
  'gastrocnemio':{latin:'Musculus gastrocnemius',location:'Compartimento superficial posterior de la pierna',origin:'Cóndilos femorales medial y lateral',insertion:'Calcáneo mediante el tendón de Aquiles',function:'Flexión plantar del tobillo y contribución a la flexión de la rodilla',innervation:'Nervio tibial (S1–S2)',bloodSupply:'Ramas surales de la arteria poplítea',relations:'Forma parte del tríceps sural junto con el sóleo',clinical:'Las lesiones del complejo gastrocnemio-sóleo son frecuentes en esfuerzos explosivos'}
 }
+function normalizeCatalogName(value){
+ return String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ -]/gi,' ').replace(/\\s+/g,' ').trim()
+}
+function mergeCatalogItems(...lists){
+ const map=new Map()
+ lists.flat().filter(Boolean).forEach(item=>{
+  const name=spanishAnatomyName(item.name||item.originalName)
+  if(!name)return
+  const key=\`\${item.system||'unknown'}::\${normalizeCatalogName(name)}\`
+  const previous=map.get(key)
+  map.set(key,previous?{...previous,...item,name,originalName:item.originalName||previous.originalName||name,description:item.description||previous.description||anatomyDescription(name,item.system)}:{...item,name,originalName:item.originalName||name,description:item.description||anatomyDescription(name,item.system)})
+ })
+ return [...map.values()]
+}
 function getStructureFacts(name){return structureFacts[String(name||'').toLowerCase()]||null}
 function anatomyDescription(name,system){
  const n=String(name||'').toLowerCase()
@@ -203,11 +217,11 @@ async function preloadAtlas(atlas){
 }
 function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress,isolate,explode,onCatalog,region,bodySex,sectionCut}){
  const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
- const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),regionRef=useRef(region),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode),bodySexRef=useRef(bodySex),sectionCutRef=useRef(sectionCut)
- activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;regionRef.current=region;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode;bodySexRef.current=bodySex;sectionCutRef.current=sectionCut
+ const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),regionRef=useRef(region),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode),sectionCutRef=useRef(sectionCut)
+ activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;regionRef.current=region;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode;sectionCutRef.current=sectionCut
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
-  let renderer,scene,camera,controls,group,detailedGroup,atlas,parts=[],meshes=[],detailedMeshes=[],pickers=[],materials=[],detailedParts=[]
+  let renderer,scene,camera,controls,group,detailedGroup,atlas,parts=[],meshes=[],detailedMeshes=[],materials=[],detailedParts=[]
   const explosionTargets=new Map()
   const init=async()=>{
    try{
@@ -342,7 +356,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const hit=hits[0]
      if(hit.object.userData.isDetailedMuscle){
       const p=hit.object.userData.part
-      if(p)onSelect({...p,name:spanishAnatomyName(p.name),originalName:p.originalName||p.name,description:p.description||anatomyDescription(p.name,p.system)})
+      if(p){onSelect({...p,name:spanishAnatomyName(p.name),originalName:p.originalName||p.name,description:p.description||anatomyDescription(p.name,p.system)});controls.target.copy(hit.point);const dir=camera.position.clone().sub(hit.point).normalize();camera.position.copy(hit.point).addScaledVector(dir,Math.max(camera.position.distanceTo(hit.point)*.42,.7));controls.update()}
       return
      }
      const geometry=hit.object.geometry
@@ -350,7 +364,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      if(!indexAttr || hit.faceIndex==null)return
      const a=geometry.index ? geometry.index.getX(hit.faceIndex*3) : hit.faceIndex*3
      const partIndex=Math.round(indexAttr.getX(a))
-     if(parts[partIndex]){const p=parts[partIndex];onSelect({...p,name:spanishAnatomyName(p.name),originalName:p.name,description:anatomyDescription(p.name,p.system)})}
+     if(parts[partIndex]){const p=parts[partIndex];onSelect({...p,name:spanishAnatomyName(p.name),originalName:p.name,description:anatomyDescription(p.name,p.system)});controls.target.copy(hit.point);const dir=camera.position.clone().sub(hit.point).normalize();camera.position.copy(hit.point).addScaledVector(dir,Math.max(camera.position.distanceTo(hit.point)*.55,.9));controls.update()}
     }
     renderer.domElement.addEventListener('click',click)
     const resize=()=>{camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight)}
@@ -401,7 +415,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
        const systemVisible=!!activeRef.current[system]
        let visible=systemVisible
        if(system==='muscular' && detailedMeshes.length) visible=false
-       if(isolateRef.current && selectedRef.current) visible=systemVisible && system===selectedRef.current.system && visible
+       if(isolateRef.current && selectedRef.current){ const selectedName=normalizeCatalogName(selectedRef.current.name||selectedRef.current.originalName); const meshName=normalizeCatalogName(mesh.userData.part?.name||mesh.userData.part?.originalName); visible=systemVisible && system===selectedRef.current.system && (system!=='muscular'||meshName===selectedName) } && visible
        mesh.visible=visible
        if(mesh.visible){
         if(!explosionTargets.has(mesh))explosionTargets.set(mesh,mesh.position.clone())
@@ -562,7 +576,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const fittedCenter=fittedBounds.getCenter(new THREE.Vector3())
      detailedGroup.position.add(center).sub(fittedCenter)
      detailedGroup.updateMatrixWorld(true)
-     onCatalog?.([...detailedParts,...parts])
+     onCatalog?.(mergeCatalogItems(parts,detailedParts))
      appliedView='';appliedRegion='full';setViewPosition(viewRef.current)
      const allBounds=new THREE.Box3().setFromObject(group)
      allBounds.union(new THREE.Box3().setFromObject(detailedGroup))
@@ -582,7 +596,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
   init()
   return()=>{disposed=true;cancelAnimationFrame(frame);if(renderer){renderer.dispose();renderer.domElement.remove()};meshes.forEach(m=>m.geometry.dispose());detailedMeshes.forEach(m=>m.geometry.dispose());materials.forEach(m=>m.dispose())}
  },[bodySex])
- useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0}},[resetToken])
+ useEffect(()=>{if(resetToken&&modelRef.current){modelRef.current.group.rotation.y=0;modelRef.current.detailedGroup.rotation.y=0;modelRef.current.controls.reset()}},[resetToken])
  return <div className="scene-wrap"><div ref={ref} className="scene"/>{error&&<div className="model-error"><strong>Modelo 3D</strong><span>{error}</span><small>{error.includes('catalog')?'Comprueba la conexión a Internet y vuelve a cargar.':'Vuelve a cargar la página para intentar de nuevo.'}</small></div>}</div>
 }
 export default function App(){
