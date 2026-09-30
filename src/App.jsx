@@ -92,7 +92,7 @@ const structureFacts={
  'gastrocnemio':{latin:'Musculus gastrocnemius',location:'Compartimento superficial posterior de la pierna',origin:'Cóndilos femorales medial y lateral',insertion:'Calcáneo mediante el tendón de Aquiles',function:'Flexión plantar del tobillo y contribución a la flexión de la rodilla',innervation:'Nervio tibial (S1–S2)',bloodSupply:'Ramas surales de la arteria poplítea',relations:'Forma parte del tríceps sural junto con el sóleo',clinical:'Las lesiones del complejo gastrocnemio-sóleo son frecuentes en esfuerzos explosivos'}
 }
 function normalizeCatalogName(value){
- return String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ -]/gi,' ').replace(/\\s+/g,' ').trim()
+ return String(value||'').toLowerCase().replace(/_/g,' ').replace(/[^a-z0-9áéíóúüñ -]/gi,' ').replace(/\s+/g,' ').trim()
 }
 function mergeCatalogItems(...lists){
  const map=new Map()
