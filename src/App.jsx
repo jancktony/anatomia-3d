@@ -99,7 +99,7 @@ function mergeCatalogItems(...lists){
  lists.flat().filter(Boolean).forEach(item=>{
   const name=spanishAnatomyName(item.name||item.originalName)
   if(!name)return
-  const key=\`\${item.system||'unknown'}::\${normalizeCatalogName(name)}\`
+  const key=(item.system||'unknown')+'::'+normalizeCatalogName(name)
   const previous=map.get(key)
   map.set(key,previous?{...previous,...item,name,originalName:item.originalName||previous.originalName||name,description:item.description||previous.description||anatomyDescription(name,item.system)}:{...item,name,originalName:item.originalName||name,description:item.description||anatomyDescription(name,item.system)})
  })
