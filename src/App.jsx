@@ -415,14 +415,14 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
        const systemVisible=!!activeRef.current[system]
        let visible=systemVisible
        if(system==='muscular' && detailedMeshes.length) visible=false
-       if(isolateRef.current && selectedRef.current){ const selectedName=normalizeCatalogName(selectedRef.current.name||selectedRef.current.originalName); const meshName=normalizeCatalogName(mesh.userData.part?.name||mesh.userData.part?.originalName); visible=systemVisible && system===selectedRef.current.system && (system!=='muscular'||meshName===selectedName) } && visible
+       if(isolateRef.current && selectedRef.current){ const selectedName=normalizeCatalogName(selectedRef.current.name||selectedRef.current.originalName); const meshName=normalizeCatalogName(mesh.userData.part?.name||mesh.userData.part?.originalName); visible=systemVisible && system===selectedRef.current.system && (system!=='muscular'||meshName===selectedName)
        mesh.visible=visible
        if(mesh.visible){
         if(!explosionTargets.has(mesh))explosionTargets.set(mesh,mesh.position.clone())
         const base=explosionTargets.get(mesh)
         const center=mesh.geometry.boundingSphere?.center||new THREE.Vector3()
         const dir=new THREE.Vector3(center.x,center.y-.4,center.z).normalize()
-        mesh.position.lerp(base.clone().addScaledVector(dir,explodeRef.current?.22:0),.12)
+        mesh.position.lerp(base.clone().addScaledVector(dir,explodeRef.current ? 0.22 : 0),.12)
        }
        mesh.material.transparent=!!transparentRef.current
        mesh.material.opacity=transparentRef.current?.52:1
