@@ -176,3 +176,11 @@ button,.region,.layer,.preset,.subregion,.region-root{touch-action:manipulation;
 
 /* Herramientas de estudio gratuitas */
 .study-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#f6edf1;border-radius:10px;margin:12px 0}.study-mode-switch button{border:0;background:transparent;color:#856c78;border-radius:7px;padding:9px;font-size:11px;font-weight:800;cursor:pointer}.study-mode-switch button.active{background:#fff;color:#9b4f70;box-shadow:0 1px 5px #4d24300f}.flashcard-panel{display:grid;gap:10px}.flashcard-face{min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:22px 16px;border:1px solid #ead5df;border-radius:14px;background:linear-gradient(145deg,#fffafd,#f8eaf1)}.flashcard-face small{font-size:9px;letter-spacing:1.2px;font-weight:900;color:#a56b85}.flashcard-face strong{font-size:18px;line-height:1.5;color:#493440}.flashcard-face span{font-size:10px;color:#876779}.study-next-card{border:1px solid #e5cbd8;background:#fff;color:#8e4c6b;border-radius:9px;padding:10px;font-weight:800;cursor:pointer}.flashcard-panel>small{font-size:10px;line-height:1.5;color:#8c7a83}
+
+/* Selector de dificultad del cuestionario */
+.quiz-difficulty{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:10px 0 13px;padding:9px;background:#fbf5f8;border:1px solid #f0e2e9;border-radius:10px}
+.quiz-difficulty>span{font-size:10px;font-weight:800;color:#886d7b;margin-right:3px}
+.quiz-difficulty button{border:1px solid #ead6e0;background:#fff;color:#806575;border-radius:7px;padding:7px 9px;font-size:10px;font-weight:750;cursor:pointer}
+.quiz-difficulty button.active{background:#9b4f70;color:#fff;border-color:#9b4f70}
+.mobile-quiz-difficulty{margin:10px 0;justify-content:space-between}
+.mobile-quiz-difficulty button{flex:1}
