@@ -234,7 +234,8 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
    try{
     atlas=await loadAtlas(bodySex);if(disposed)return;parts=atlas.parts
     let detailed=null,detailedSkeleton=null
-    const detailedPromise=Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>[null,null])
+    // Las capas detalladas de Z-Anatomy corresponden al modelo masculino; no deben añadirse al atlas femenino.
+    const detailedPromise=bodySex==='male'?Promise.all([loadDetailedMuscles(),loadDetailedSkeleton()]).catch(()=>[null,null]):Promise.resolve([null,null])
     onCatalog?.(parts)
 
     scene=new THREE.Scene();scene.background=new THREE.Color(0xfff0f5)
