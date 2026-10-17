@@ -215,10 +215,10 @@ async function preloadAtlas(atlas){
  await Promise.all((atlas.chunks||[]).map(loadAtlasChunk))
  return atlas
 }
-function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress,isolate,explode,onCatalog,region,bodySex,sectionCut}){
+function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotate,view,onProgress,isolate,explode,onCatalog,region,subregion,bodySex,sectionCut}){
  const ref=useRef(),modelRef=useRef(null),[error,setError]=useState('')
- const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),regionRef=useRef(region),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode),sectionCutRef=useRef(sectionCut)
- activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;regionRef.current=region;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode;sectionCutRef.current=sectionCut
+ const activeRef=useRef(active),selectedRef=useRef(selected),autoRotateRef=useRef(autoRotate),viewRef=useRef(view),regionRef=useRef(region),subregionRef=useRef(subregion),transparentRef=useRef(transparent),isolateRef=useRef(isolate),explodeRef=useRef(explode),sectionCutRef=useRef(sectionCut)
+ activeRef.current=active;selectedRef.current=selected;autoRotateRef.current=autoRotate;viewRef.current=view;regionRef.current=region;subregionRef.current=subregion;transparentRef.current=transparent;isolateRef.current=isolate;explodeRef.current=explode;sectionCutRef.current=sectionCut
  useEffect(()=>{
   const el=ref.current;let disposed=false,frame=0
   let renderer,scene,camera,controls,group,detailedGroup,atlas,parts=[],meshes=[],detailedMeshes=[],materials=[],detailedParts=[]
@@ -289,6 +289,32 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
      const b=new THREE.Box3().setFromObject(group),c=b.getCenter(new THREE.Vector3())
      clipPlane.constant=-clipPlane.normal.dot(c)
      mats.forEach(m=>m.clippingPlanes=[clipPlane]);materials.forEach(m=>m.clippingPlanes=[clipPlane])
+    }
+    const regionBands={
+     head:[.82,1],face:[.82,.97],skull:[.82,1],brain:[.87,1],ear:[.83,.94],eye:[.84,.97],neck:[.68,.84],
+     thorax:[.49,.76],'thoracic-wall':[.5,.76],heart:[.51,.71],lungs:[.49,.74],mediastinum:[.49,.75],
+     abdomen:[.29,.55],'abdominal-wall':[.29,.56],'digestive-abdomen':[.29,.57],retroperitoneum:[.28,.54],peritoneum:[.29,.56],
+     pelvis:[.14,.38],'pelvic-bone':[.13,.39],'pelvic-floor':[.13,.27],'male-pelvis':[.14,.37],'female-pelvis':[.14,.37],
+     back:[.18,.84],spine:[.17,.85],'back-muscles':[.19,.84],'spinal-cord':[.28,.86],gluteal:[.17,.4],
+     upper:[.22,.83],shoulder:[.59,.81],arm:[.4,.7],elbow:[.35,.57],forearm:[.22,.47],wrist:[.17,.32],hand:[.12,.28],
+     lower:[0,.46],hip:[.22,.44],thigh:[.09,.36],knee:[.05,.23],leg:[0,.18],ankle:[0,.1],foot:[0,.08],
+     full:[0,1],surface:[0,1],skeleton:[0,1],muscles:[0,1],organs:[0,1]
+    }
+    const applyRegionClip=()=>{
+     const key=subregionRef.current||regionRef.current||'full'
+     const band=regionBands[key]
+     const bounds=new THREE.Box3().setFromObject(group)
+     if(detailedGroup)bounds.union(new THREE.Box3().setFromObject(detailedGroup))
+     const height=Math.max(bounds.max.y-bounds.min.y,.001)
+     const planes=[]
+     if(band&&key!=='full'&&!(band[0]===0&&band[1]===1)){
+      const lower=bounds.min.y+height*band[0],upper=bounds.min.y+height*band[1]
+      planes.push(new THREE.Plane(new THREE.Vector3(0,1,0),-lower))
+      planes.push(new THREE.Plane(new THREE.Vector3(0,-1,0),upper))
+     }
+     const cut=sectionCutRef.current==='none'?[]:[clipPlane]
+     const uniqueMaterials=new Set([...mats.values(),...materials])
+     uniqueMaterials.forEach(material=>{material.clippingPlanes=[...cut,...planes]})
     }
     let loaded=0
     for(let ci=0;ci<atlas.chunks.length;ci++){
@@ -448,7 +474,7 @@ function AnatomyScene({active,onSelect,selected,resetToken,transparent,autoRotat
       const currentRegion=regionRef.current||'full'
       if(currentRegion!==appliedRegion){if(currentRegion==='full')setViewPosition(currentView);else setRegionFocus(currentRegion);appliedRegion=currentRegion}
       if(autoRotateRef.current){const step=.0018;group.rotation.y+=step;detailedGroup.rotation.y+=step}
-      updateClip();controls.update();renderer.render(scene,camera)
+      updateClip();applyRegionClip();controls.update();renderer.render(scene,camera)
      }
     }
     animate()
@@ -670,7 +696,7 @@ export default function App(){
       <div className="toolbar-group"><button onClick={()=>setRegion('full')} className={region==='full'?'selected':''}>Cuerpo entero</button><button onClick={()=>setView('front')} className={view==='front'?'selected':''}>Frontal</button><button onClick={()=>setView('back')} className={view==='back'?'selected':''}>Posterior</button><button onClick={()=>setView('left')} className={view==='left'?'selected':''}>Izquierda</button><button onClick={()=>setView('right')} className={view==='right'?'selected':''}>Derecha</button></div>
       <div className="toolbar-group"><button onClick={()=>setAutoRotate(!autoRotate)} className={autoRotate?'selected':''}>↻ Rotar</button><button onClick={()=>setTransparent(!transparent)} className={transparent?'selected':''}>◐ Transparencia</button><button onClick={()=>setExplode(!explode)} className={explode?'selected':''}>✧ Explosión</button><button onClick={cycleSectionCut} className={sectionCut!=='none'?'selected':''}>✂ {sectionCut==='none'?'Corte':sectionCut==='sagittal'?'Sagital':sectionCut==='coronal'?'Coronal':'Axial'}</button></div>
     </div>
-    <AnatomyScene sectionCut={sectionCut} bodySex={bodySex} active={active} onSelect={selectStructure} onCatalog={setCatalog} selected={selected} resetToken={reset} isolate={isolate} explode={explode} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress} region={region}/>
+    <AnatomyScene sectionCut={sectionCut} subregion={selectedSubregion} bodySex={bodySex} active={active} onSelect={selectStructure} onCatalog={setCatalog} selected={selected} resetToken={reset} isolate={isolate} explode={explode} transparent={transparent} autoRotate={autoRotate} view={view} onProgress={setProgress} region={region}/>
     <div className="viewer-status"><span className="status-dot"/><span>{selectedSubregion?selectedSubregion.replaceAll('-',' ').toUpperCase():region==='full'?'CUERPO COMPLETO':(regionalSections.find(s=>s.id===region)?.name||region).toUpperCase()}</span><span>•</span><span>{progress<100?'Cargando '+progress+'%':'Listo'}</span></div>
     <div className="quick-controls"><button onClick={()=>setReset(x=>x+1)}>⟳</button><button onClick={()=>setView('front')}>●</button><button onClick={()=>setView('back')}>◐</button><button onClick={()=>setView('left')}>←</button><button onClick={()=>setView('right')}>→</button></div>
    </section>
