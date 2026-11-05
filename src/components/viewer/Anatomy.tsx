@@ -9,6 +9,8 @@ const FILES = [
   { url: '/models/bones.glb', system: 'esqueleto' as System, color: '#e6dcc3', roughness: 0.65 },
   { url: '/models/muscles.glb', system: 'musculos' as System, color: '#b5483f', roughness: 0.55 },
   { url: '/models/nerves.glb', system: 'nervioso' as System, color: '#f2c94c', roughness: 0.5 },
+  { url: '/models/lymph.glb', system: 'linfatico' as System, color: '#6fd3f5', roughness: 0.5 },
+  { url: '/models/viscera.glb', system: 'visceras' as System, color: '#c77dff', roughness: 0.55 },
   { url: '/models/vessels.glb', system: 'vascular' as System, color: '#c1121f', roughness: 0.45 },
 ]
 

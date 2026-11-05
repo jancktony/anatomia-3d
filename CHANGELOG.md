@@ -5,6 +5,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Capas Linfático y Vísceras (Z-Anatomy) con 6 + 12 estructuras seleccionables.
 - Cuerpos 3D hombre/mujer (MakeHuman, CC0) con selector.
 - Capas de Z-Anatomy (CC BY-SA 4.0): huesos, músculos, nervios y vasos, cargadas bajo demanda.
 - PWA: precaché de los `.glb` y `CacheFirst` en runtime.

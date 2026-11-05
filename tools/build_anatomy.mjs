@@ -37,7 +37,24 @@ const VESSEL_GROUPS = [
   ['arteria-femoral', /^femoral_artery/i],
   ['vascular-resto', /./],
 ]
-const groups = { bones: BONE_GROUPS, muscles: MUSCLE_GROUPS, nerves: NERVE_GROUPS, vessels: VESSEL_GROUPS }[kind]
+const LYMPH_GROUPS = [
+  ['bazo', /^spleen/i], ['timo', /thymus/i], ['amigdalas', /tonsil/i],
+  ['ganglios-cervicales', /(cervical|jugul|submandibular|submental|occipital|mastoid|parotid|auricular|retropharyngeal|supraclavicular|mandibular|bucinator|nasolabial|thyroid_nodes)/i],
+  ['ganglios-axilares', /(axillary|brachial|cubital|infraclavicular|interpectoral|supratrochlear)/i],
+  ['ganglios-inguinales', /(inguinal|iliac|obturator|lacunar|gluteal|sacral|popliteal|tibial|fibular|epigastric)/i],
+  ['linfatico-resto', /./],
+]
+const VISCERA_GROUPS = [
+  ['higado', /liver/i], ['estomago', /^stomach/i], ['esofago', /oesophagus/i],
+  ['pulmones', /(lobe_of_(left|right)_lung|^pleura)/i], ['traquea-bronquios', /(trachea|bronch)/i],
+  ['rinones', /(^kidney|renal_pelvis)/i], ['vejiga-urinaria', /(urinary_bladde|ureter|urethra)/i],
+  ['pancreas', /pancrea/i], ['vesicula-biliar', /(gallbladde|bile_duct|cystic)/i],
+  ['intestino-delgado', /(duodenum|jejunum|ileum)/i],
+  ['intestino-grueso', /(colon|appendix|taenia|caecum|rectum|anal_)/i],
+  ['tiroides', /(thyroid|parathyroid)/i],
+  ['visceras-resto', /./],
+]
+const groups = { bones: BONE_GROUPS, muscles: MUSCLE_GROUPS, nerves: NERVE_GROUPS, vessels: VESSEL_GROUPS, lymph: LYMPH_GROUPS, viscera: VISCERA_GROUPS }[kind]
 const groupOf = (name) => {
   if (kind === 'muscles' && MUSCLE_BAD.test(name)) return null
   return groups.find(([, re]) => re.test(name))?.[0] ?? null
