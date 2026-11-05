@@ -11,6 +11,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - CI (typecheck + build + `npm audit`), cabeceras de seguridad en `vercel.json`.
 
 ### Changed
+- Sidebar: tarjetas de sistemas en cuadrícula y estructuras agrupadas por sección.
 - `Scene` cargada con `React.lazy`; entorno de luz local (sin HDR remoto).
 
 ### Removed

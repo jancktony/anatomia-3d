@@ -1,16 +1,20 @@
-import { Search, Eye, EyeOff, Layers, Brain } from 'lucide-react'
+import { Search, Eye, EyeOff, Brain } from 'lucide-react'
 import { systems, structures, type System } from '../../data/anatomy'
 import { useAnatomyStore } from '../../store/useAnatomyStore'
 
+const short = (label: string) => label.replace('Sistema ', '')
+
 export default function Sidebar() {
   const { activeSystems, toggleSystem, searchQuery, setSearch, selectedId, setSelected, setIsolated } = useAnatomyStore()
-  const filtered = structures.filter((s) => {
-    const q = searchQuery.toLowerCase()
-    if (q && !s.name.toLowerCase().includes(q) && !s.latinName?.toLowerCase().includes(q) && !s.tags?.some(t => t.toLowerCase().includes(q))) return false
-    const inner: readonly System[] = activeSystems.filter((x) => x !== 'piel')
-    if (inner.length && !inner.includes(s.system)) return false
-    return true
-  }).sort((a,b) => a.name.localeCompare(b.name))
+  const q = searchQuery.toLowerCase()
+  const inner: readonly System[] = activeSystems.filter((x) => x !== 'piel')
+  const visible = structures.filter((s) => {
+    if (q && !s.name.toLowerCase().includes(q) && !s.latinName?.toLowerCase().includes(q) && !s.tags?.some((t) => t.toLowerCase().includes(q))) return false
+    return !inner.length || inner.includes(s.system)
+  })
+  const sections = systems
+    .map((sys) => ({ sys, items: visible.filter((s) => s.system === sys.id).sort((a, b) => a.name.localeCompare(b.name)) }))
+    .filter((g) => g.items.length)
 
   return (
     <aside className="w-80 shrink-0 h-full bg-[#0f1428]/95 backdrop-blur border-r border-white/5 flex flex-col">
@@ -24,29 +28,37 @@ export default function Sidebar() {
         </div>
         <div className="relative">
           <Search className="absolute left-2 top-2 text-slate-400" size={16} />
-          <input value={searchQuery} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-2 py-1.5 rounded-lg bg-white/5 text-sm outline-none focus:ring-1 focus:ring-teal-400/50" />
+          <input aria-label="Buscar estructura" value={searchQuery} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-2 py-1.5 rounded-lg bg-white/5 text-sm outline-none focus:ring-1 focus:ring-teal-400/50" />
         </div>
       </div>
 
-      <div className="p-3 border-b border-white/5">
-        <div className="flex items-center gap-2 text-xs text-slate-400 mb-2"><Layers size={14} /><span>Sistemas</span></div>
-        <div className="flex flex-wrap gap-1">
-          {systems.map((sys) => (
-            <button key={sys.id} onClick={() => toggleSystem(sys.id)} className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition ${activeSystems.includes(sys.id) ? 'bg-white/10' : 'bg-white/5 opacity-40'}`} style={{ borderLeft: `2px solid ${sys.color}` }}>
-              {activeSystems.includes(sys.id) ? <Eye size={12} /> : <EyeOff size={12} />}
-              {sys.label.replace('Sistema ', '').replace('Piel y ', 'Piel')}
+      <div className="p-3 border-b border-white/5 grid grid-cols-2 gap-2">
+        {systems.map((sys) => {
+          const on = activeSystems.includes(sys.id)
+          const n = structures.filter((s) => s.system === sys.id).length
+          return (
+            <button key={sys.id} aria-pressed={on} onClick={() => toggleSystem(sys.id)} className={`rounded-lg p-2 text-left transition border border-white/5 ${on ? 'bg-white/10' : 'bg-white/5 opacity-50 hover:opacity-80'}`} style={{ borderTop: `3px solid ${sys.color}` }}>
+              <div className="flex items-center justify-between text-slate-300">{on ? <Eye size={14} /> : <EyeOff size={14} />}<span className="text-[10px] text-slate-400">{n}</span></div>
+              <div className="text-xs font-medium mt-1 leading-tight">{short(sys.label)}</div>
             </button>
-          ))}
-        </div>
+          )
+        })}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
-        <div className="text-xs text-slate-400 px-2 py-1">Estructuras ({filtered.length})</div>
-        {filtered.map((s) => (
-          <button key={s.id} onClick={() => { setSelected(s.id); setIsolated(s.id); }} className={`w-full text-left px-2 py-1.5 rounded hover:bg-white/5 transition ${selectedId === s.id ? 'bg-teal-500/10 border-l-2 border-teal-400' : ''}`}>
-            <div className="text-sm">{s.name}</div>
-            {s.latinName && <div className="text-xs text-slate-500 italic">{s.latinName}</div>}
-          </button>
+      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+        {sections.length === 0 && <div className="text-xs text-slate-500 px-1">Sin resultados</div>}
+        {sections.map(({ sys, items }) => (
+          <section key={sys.id}>
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-1.5"><span className="size-2 rounded-full" style={{ background: sys.color }} />{short(sys.label)} ({items.length})</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {items.map((s) => (
+                <button key={s.id} onClick={() => { setSelected(s.id); setIsolated(s.id) }} className={`text-left px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition ${selectedId === s.id ? 'ring-1 ring-teal-400/60 bg-teal-500/10' : ''}`}>
+                  <div className="text-sm leading-tight">{s.name}</div>
+                  {s.latinName && <div className="text-[10px] text-slate-500 italic truncate">{s.latinName}</div>}
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </aside>
