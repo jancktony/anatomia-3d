@@ -38,24 +38,24 @@ function CameraReset({ controlsRef }: { controlsRef: RefObject<ComponentRef<type
 export default function Scene() {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
   return (
-    <Canvas camera={{ position: [2.8, 1.6, 3.6], fov: 40 }} shadows dpr={[1, 2]} gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}>
+    <Canvas camera={{ position: [2.8, 1.6, 3.6], fov: 40 }} frameloop="demand" dpr={[1, 1.5]} gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}>
       <color attach="background" args={['#0b1026']} />
       <fog attach="fog" args={['#0b1026', 9, 18]} />
       <ambientLight intensity={0.35} />
-      <directionalLight position={[6, 12, 8]} intensity={1.4} castShadow shadow-mapSize={[2048, 2048]} />
+      <directionalLight position={[6, 12, 8]} intensity={1.4} />
       <directionalLight position={[-4, 6, -5]} intensity={1.1} color="#9fd2ff" />
       <spotLight position={[0, 6, 4]} angle={0.5} penumbra={1} intensity={60} color="#fff1e6" />
       <hemisphereLight args={['#bfe3ff', '#0b1026', 0.4]} />
       <Suspense fallback={<Loader />}>
         <Body />
         <Anatomy />
-        <Environment resolution={256}>
+        <Environment resolution={128}>
           <Lightformer form="rect" intensity={2.2} position={[0, 5, 5]} scale={[10, 4, 1]} />
           <Lightformer form="rect" intensity={1.2} position={[-6, 2, -2]} scale={[6, 6, 1]} color="#9fd2ff" />
           <Lightformer form="ring" intensity={1} position={[5, 3, -4]} scale={4} color="#ffd9b8" />
         </Environment>
         <mesh rotation-x={-Math.PI / 2} position={[0, -0.341, 0]} receiveShadow><circleGeometry args={[2.6, 64]} /><meshStandardMaterial color="#10183a" roughness={0.9} /></mesh>
-        <ContactShadows position={[0, -0.335, 0]} opacity={0.5} scale={6} blur={3} far={4} />
+        <ContactShadows resolution={512} position={[0, -0.335, 0]} opacity={0.5} scale={6} blur={3} far={4} />
       </Suspense>
       <OrbitControls ref={controls} makeDefault minDistance={0.8} maxDistance={7} enableDamping dampingFactor={0.08} />
       <CameraReset controlsRef={controls} />

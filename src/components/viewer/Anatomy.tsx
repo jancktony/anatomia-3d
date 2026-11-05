@@ -37,7 +37,6 @@ function Layer({ url, system, color, roughness }: (typeof FILES)[number]) {
           <mesh
             key={id}
             geometry={m.geometry}
-            castShadow
             onClick={selectable ? (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); setSelected(id) } : undefined}
           >
             <meshStandardMaterial color={color} roughness={roughness} emissive={selectedId === id ? '#2dd4bf' : '#000000'} emissiveIntensity={selectedId === id ? 0.45 : 0} />

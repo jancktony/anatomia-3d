@@ -12,6 +12,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - CI (typecheck + build + `npm audit`), cabeceras de seguridad en `vercel.json`.
 
 ### Changed
+- Rendimiento: render bajo demanda, sin sombras dinámicas ni clearcoat, dpr máx 1.5, entorno 128; solo las pieles se precachean.
 - Sidebar: tarjetas de sistemas en cuadrícula y estructuras agrupadas por sección.
 - `Scene` cargada con `React.lazy`; entorno de luz local (sin HDR remoto).
 

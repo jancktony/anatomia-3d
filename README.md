@@ -21,7 +21,7 @@ Selector Hombre/Mujer; activa capas (Esquelético, Muscular, Nervioso, Vascular)
 Regenerar: `python tools/build_bodies.py` (requiere los archivos en `tools/mh/`) y `node tools/build_anatomy.mjs <fbx> <out.glb> <bones|muscles|nerves|vessels> <presupuesto-tris>`. Los FBX de origen: `LluisV/Z-Anatomy`, rama `PC-Version`, `Resources/Models/FBX/`.
 
 ## Caché
-El Service Worker (vite-plugin-pwa) precachea todo (~22 MB) y sirve `.glb` con `CacheFirst`. Cada capa se descarga solo al activarla.
+El Service Worker (vite-plugin-pwa) precachea las pieles y sirve `.glb` con `CacheFirst`. Cada capa se descarga solo al activarla.
 
 ## Límites conocidos
 - Esqueleto, músculos, nervios y vasos son masculinos; en mujer solo se escalan (×0.936).

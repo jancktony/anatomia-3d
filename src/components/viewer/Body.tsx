@@ -15,14 +15,13 @@ export function Body() {
   // pose mismatch: skin (arms out) vs Z-Anatomy (arms down) -> never overlay them
   if (!skinOn || inner) return null
   return (
-    <mesh geometry={geometry} castShadow receiveShadow>
+    <mesh geometry={geometry}>
       <meshPhysicalMaterial
         color={gender === 'male' ? '#d8a68c' : '#e0ae97'}
         roughness={0.55}
         sheen={0.7}
         sheenRoughness={0.4}
         sheenColor="#ff9f8a"
-        clearcoat={0.08}
       />
     </mesh>
   )
