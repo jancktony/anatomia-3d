@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/panels/infopanel.tsx","./src/components/panels/sidebar.tsx","./src/components/viewer/anatomy.tsx","./src/components/viewer/body.tsx","./src/components/viewer/scene.tsx","./src/data/anatomy.ts","./src/store/useanatomystore.ts"],"version":"5.9.3"}

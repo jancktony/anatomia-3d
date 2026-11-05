@@ -1,0 +1,4 @@
+bones.glb, muscles.glb: derived (merged, decimated, rescaled) from Z-Anatomy (https://github.com/LluisV/Z-Anatomy,
+https://www.z-anatomy.com), licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Based on BodyParts3D.
+These derived files are shared under the same CC BY-SA 4.0 license.
+male.glb, female.glb: derived from the MakeHuman base mesh and targets, CC0 1.0.

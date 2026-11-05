@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vercel/
+*.log
+# derived/downloaded build inputs (regenerate with tools/)
+tools/mh/
+tools/raw_*.glb
+.claude/
+# emitted by tsc -b from tsconfig.node.json
+vite.config.js
+vite.config.d.ts
+*.tsbuildinfo

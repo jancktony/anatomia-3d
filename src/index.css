@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+body { @apply bg-[#0b1026] text-slate-100 antialiased; }
+canvas { touch-action: none; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
