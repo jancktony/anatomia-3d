@@ -80,7 +80,7 @@ function Viewer({ onSettings }: { onSettings: () => void }) {
           </label>
         )}
       </div>
-      <div className="absolute bottom-1 right-14 z-10 text-[10px] text-muted">{s.gender === 'female' ? 'Human Reference Atlas + BodyParts3D (CC BY 4.0)' : 'Z-Anatomy (CC BY-SA 4.0)'} · MakeHuman (CC0)</div>
+      <div className="absolute bottom-1 right-14 z-10 text-[10px] text-muted">Z-Anatomy (CC BY-SA 4.0){s.gender === 'female' ? ' + Human Reference Atlas (CC BY 4.0)' : ''} · MakeHuman (CC0)</div>
     </div>
   )
 }

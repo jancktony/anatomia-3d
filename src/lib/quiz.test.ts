@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { regions, structures } from '../data/anatomy'
 import { CHOICES, makeQuestion, type Difficulty } from './quiz'
 import { availableFor } from './available'
-import femaleIds from '../data/female-ids.json'
 
 describe('makeQuestion', () => {
   it.each(Object.keys(CHOICES) as Difficulty[])('%s: includes the target once, no duplicates, right size', (d) => {
@@ -25,11 +24,9 @@ describe('makeQuestion', () => {
     expect(ids.size).toBe(structures.length)
     for (const r of regions) for (const id of r.ids) expect(ids.has(id), `${r.id}:${id}`).toBe(true)
   })
-  it('female ids exist and female-only structures stay out of the male model', () => {
-    const ids = new Set(structures.map((s) => s.id))
-    for (const id of femaleIds) expect(ids.has(id), id).toBe(true)
+  it('the woman has every structure, the man none of the female-only ones', () => {
     expect(availableFor('male').some((s) => s.only === 'female')).toBe(false)
+    expect(availableFor('female')).toHaveLength(structures.length)
     expect(availableFor('female').some((s) => s.id === 'utero')).toBe(true)
-    expect(availableFor('female').length).toBe(femaleIds.length)
   })
 })

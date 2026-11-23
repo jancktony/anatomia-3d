@@ -3,16 +3,16 @@ import { useAnatomyStore } from '../store/useAnatomyStore'
 
 const u = (n: string) => `${import.meta.env.BASE_URL}models/${n}.glb`
 
-/** url = male layer (Z-Anatomy), urlF = female layer (Human Reference Atlas); a missing one means the layer does not exist for that model. */
+/** url = male layer (Z-Anatomy), urlF = female layer. The woman reuses the male BodyParts3D layers (same body, drawn x0.936) and adds the female-only repro/senses layers from the Human Reference Atlas; a missing one means the layer does not exist for that model. */
 export interface LayerFile { readonly url?: string; readonly urlF?: string; readonly system: System; readonly color: string; readonly roughness: number }
 
 export const FILES: readonly LayerFile[] = [
-  { url: u('bones'), urlF: u('bones_f'), system: 'esqueleto', color: '#e6dcc3', roughness: 0.65 },
-  { url: u('muscles'), urlF: u('muscles_f'), system: 'musculos', color: '#b5483f', roughness: 0.55 },
-  { url: u('nerves'), urlF: u('nerves_f'), system: 'nervioso', color: '#f2c94c', roughness: 0.5 },
-  { url: u('lymph'), urlF: u('lymph_f'), system: 'linfatico', color: '#6fd3f5', roughness: 0.5 },
-  { url: u('viscera'), urlF: u('viscera_f'), system: 'visceras', color: '#c77dff', roughness: 0.55 },
-  { url: u('vessels'), urlF: u('vessels_f'), system: 'vascular', color: '#c1121f', roughness: 0.45 },
+  { url: u('bones'), urlF: u('bones'), system: 'esqueleto', color: '#e6dcc3', roughness: 0.65 },
+  { url: u('muscles'), urlF: u('muscles'), system: 'musculos', color: '#b5483f', roughness: 0.55 },
+  { url: u('nerves'), urlF: u('nerves'), system: 'nervioso', color: '#f2c94c', roughness: 0.5 },
+  { url: u('lymph'), urlF: u('lymph'), system: 'linfatico', color: '#6fd3f5', roughness: 0.5 },
+  { url: u('viscera'), urlF: u('viscera'), system: 'visceras', color: '#c77dff', roughness: 0.55 },
+  { url: u('vessels'), urlF: u('vessels'), system: 'vascular', color: '#c1121f', roughness: 0.45 },
   { urlF: u('repro_f'), system: 'reproductor', color: '#f472b6', roughness: 0.55 },
   { urlF: u('senses_f'), system: 'sensorial', color: '#86efac', roughness: 0.3 },
 ]

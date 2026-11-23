@@ -55,8 +55,11 @@ const VISCERA_GROUPS = [
   ['visceras-resto', /./],
 ]
 const groups = { bones: BONE_GROUPS, muscles: MUSCLE_GROUPS, nerves: NERVE_GROUPS, vessels: VESSEL_GROUPS, lymph: LYMPH_GROUPS, viscera: VISCERA_GROUPS }[kind]
+// male genital anatomy goes to its own non-selectable group that the woman's model does not draw
+const MALE_GENITAL = /(penis|penile|testi|scrot|spermatic|prostat|seminal|deferens|epididym|glans|cavernos|spongios|cremaster|dartos|urethra|ejaculatory)/i
 const groupOf = (name) => {
   if (kind === 'muscles' && MUSCLE_BAD.test(name)) return null
+  if (kind !== 'bones' && MALE_GENITAL.test(name)) return 'genitales-resto'
   return groups.find(([, re]) => re.test(name))?.[0] ?? null
 }
 
@@ -87,7 +90,7 @@ function weld(o) {
   return { pos: new Float32Array(pos), idx: new Uint32Array(idx) }
 }
 
-const acc = new Map(groups.map(([g]) => [g, { pos: [], idx: [], base: 0 }]))
+const acc = new Map([...groups.map(([g]) => g), 'genitales-resto'].map((g) => [g, { pos: [], idx: [], base: 0 }]))
 for (const { o, g } of items) {
   let { pos, idx } = weld(o)
   const tris = idx.length / 3

@@ -19,6 +19,9 @@ function useGridIds(): readonly string[] {
 }
 
 const CELL = 0.55
+// the woman is the same BodyParts3D body drawn at her height (2.05 vs 2.19 world units), feet kept on the floor
+const F_SCALE = 2.05 / 2.19
+const F_DY = -0.34 * (1 - F_SCALE)
 // the pregnancy set is a separate gravid uterus that overlaps the normal one: only show it when picked on its own
 const ON_DEMAND = new Set(['embarazo'])
 
@@ -34,6 +37,7 @@ function Layer({ url, system, color, roughness }: Pick<LayerFile, 'system' | 'co
   const selectedId = useAnatomyStore((s) => s.selectedId)
   const setSelected = useAnatomyStore((s) => s.setSelected)
   const quizTarget = useAnatomyStore((s) => s.quizTarget)
+  const female = useAnatomyStore((s) => s.gender === 'female')
   const focusIds = useAnatomyStore((s) => s.focusIds)
   const studying = useAnatomyStore((s) => s.studyMode !== 'off')
   const setHover = useAnatomyStore((s) => s.setHover)
@@ -55,17 +59,18 @@ function Layer({ url, system, color, roughness }: Pick<LayerFile, 'system' | 'co
     m.geometry.computeBoundingBox()
     const box = m.geometry.boundingBox!
     const c = box.getCenter(new Vector3())
+    if (female) { c.multiplyScalar(F_SCALE); c.y += F_DY }
     const dir = camera.position.clone().sub(controls.target).normalize()
     controls.target.copy(c)
-    camera.position.copy(c).addScaledVector(dir, Math.max(box.getSize(new Vector3()).length() * 1.8, 0.3))
+    camera.position.copy(c).addScaledVector(dir, Math.max(box.getSize(new Vector3()).length() * (female ? F_SCALE : 1) * 1.8, 0.3))
     controls.update()
-  }, [isolatedId, meshes, controls, camera])
+  }, [isolatedId, meshes, controls, camera, female])
   return (
-    <group>
+    <group scale={female ? F_SCALE : 1} position={[0, female ? F_DY : 0, 0]}>
       {meshes.map((m) => {
         const id = m.name
         const visible = isolatedId ? isolatedId === id : ON_DEMAND.has(id) ? false : focusIds ? focusIds.includes(id) : active
-        if (!visible) return null
+        if (!visible || (female && id === 'genitales-resto')) return null
         const cell = gridIds.indexOf(id)
         if (explode > 0 && cell < 0) return null // "-resto" pieces have no cell in the exploded grid
         const selectable = !id.endsWith('-resto')

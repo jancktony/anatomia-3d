@@ -23,6 +23,8 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - CI (typecheck + build + `npm audit`), cabeceras de seguridad en `vercel.json`.
 
 ### Changed
+- Mujer: cuerpo base de Z-Anatomy ×0.936 (como el hombre) + capas femeninas solo del reproductor, embarazo y ojos, alineadas al marco de Z-Anatomy (desplazamiento medido de +7.5 cm en profundidad entre fuentes). Los órganos del conjunto Visible Human quedaban 3 a 7 cm detrás de las costillas y músculos de BodyParts3D, sobresalían por la espalda y duplicaban riñones, corazón y columna.
+- Los genitales masculinos de Z-Anatomy van a un grupo propio que la mujer no dibuja.
 - Rendimiento: render bajo demanda, sin sombras dinámicas ni clearcoat, dpr máx 1.5, entorno 128; solo las pieles se precachean.
 - Sidebar: tarjetas de sistemas en cuadrícula y estructuras agrupadas por sección.
 - `Scene` cargada con `React.lazy`; entorno de luz local (sin HDR remoto).

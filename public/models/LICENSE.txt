@@ -3,6 +3,6 @@ https://www.z-anatomy.com), licensed CC BY-SA 4.0 (https://creativecommons.org/l
 These derived files are shared under the same CC BY-SA 4.0 license.
 male.glb, female.glb: derived from the MakeHuman base mesh and targets, CC0 1.0.
 
-*_f.glb: female layers derived (merged, decimated, rescaled) from the Human Reference Atlas female 3D organ set v1.5 (HuBMAP,
-DOI 10.48539/HBM352.BTSQ.586, CC BY 4.0) and BodyParts3D (DBCLS), as packaged in https://github.com/HiMahendraBeniwal/female-atlas.
+repro_f.glb, senses_f.glb: female layers derived (merged, decimated, rescaled, aligned) from the Human Reference Atlas female 3D organ set v1.5
+(HuBMAP, DOI 10.48539/HBM352.BTSQ.586, CC BY 4.0) and BodyParts3D (DBCLS), as packaged in https://github.com/HiMahendraBeniwal/female-atlas.
 See public/ATTRIBUTION.md.

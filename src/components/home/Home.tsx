@@ -80,7 +80,7 @@ export default function Home({ onSettings }: { onSettings: () => void }) {
           </>
         )}
         <footer className="flex items-center gap-3 text-[10px] text-muted pb-4">
-          <span>Capas: Z-Anatomy (CC BY-SA 4.0, hombre) y Human Reference Atlas + BodyParts3D (CC BY 4.0, mujer) · Cuerpo: MakeHuman (CC0)</span>
+          <span>Capas: Z-Anatomy (CC BY-SA 4.0) y, en la mujer, Human Reference Atlas (CC BY 4.0) · Cuerpo: MakeHuman (CC0)</span>
 
         </footer>
       </div>
