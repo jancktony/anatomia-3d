@@ -41,6 +41,22 @@ function weld(pos, idx) {
   return { pos: new Float32Array(outPos), idx: idx.map((i) => remap[i]) }
 }
 
+// The dataset's breasts are 24 cm tall in the Z-Anatomy frame and reach the collarbone: shrink each one about its own centre, put it at mid-pectoral
+// height and leave ~4 cm of it in front of the pectoral surface (z 0.161), its base sunk in the muscle (pectoral spans z -0.02..0.161).
+const MAMA_SCALE = 0.75, MAMA_Y = 1.265, MAMA_APEX_Z = 0.2
+function fitBreasts(pos) {
+  for (const side of [-1, 1]) {
+    const v = []
+    for (let i = 0; i < pos.length; i += 3) if (Math.sign(pos[i]) === side) v.push(i)
+    if (!v.length) continue
+    const lo = [9, 9, 9], hi = [-9, -9, -9]
+    for (const i of v) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], pos[i + k]); hi[k] = Math.max(hi[k], pos[i + k]) }
+    const c = lo.map((l, k) => (l + hi[k]) / 2), depth = (hi[2] - lo[2]) * MAMA_SCALE
+    const target = [c[0], MAMA_Y, MAMA_APEX_Z - depth / 2]
+    for (const i of v) for (let k = 0; k < 3; k++) pos[i + k] = target[k] + MAMA_SCALE * (pos[i + k] - c[k])
+  }
+}
+
 const byLayer = {}
 for (const p of atlas.parts) { const l = layerFor(p); if (l) (byLayer[l] ??= []).push(p) }
 
@@ -64,6 +80,7 @@ for (const [layer, parts] of Object.entries(byLayer)) {
     }
     g.base += remap.size
   }
+  if (groups.has('mama')) fitBreasts(groups.get('mama').pos)
   const { bytes, report } = writeGlb(groups, join(out, `${layer}.glb`), 'atlas-anatomia / Human Reference Atlas female (CC BY 4.0) + BodyParts3D, decimated', layer)
   console.log(layer.padEnd(10), 'inputTris', Math.round(total), 'bytes', bytes, Object.entries(report).map(([k, v]) => `${k}:${Math.round(v.tris)}`).join(' '))
 }

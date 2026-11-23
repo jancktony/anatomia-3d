@@ -24,7 +24,7 @@ def load_target(path, n):
     return d
 
 # extra MakeHuman shape targets (CC0) as (file, weight): a more feminine silhouette
-EXTRA = {'female': [('female-young-averagemuscle-averageweight-maxcup-averagefirmness', 0.55), ('hip-scale-horiz-incr', 0.5), ('buttocks-volume-incr', 0.45)], 'male': []}
+EXTRA = {'female': [('universal-female-young-averagemuscle-minweight', 0.5), ('female-young-averagemuscle-averageweight-maxcup-averagefirmness', 0.75), ('breast-dist-decr', 0.6), ('breast-point-incr', 0.4), ('buttocks-volume-incr', 0.15)], 'male': []}
 
 def build(gender):
     v, vt, faces = load_obj(SRC + 'base.obj')

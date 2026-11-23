@@ -13,7 +13,7 @@ export const FILES: readonly LayerFile[] = [
   { url: u('lymph'), urlF: u('lymph'), system: 'linfatico', color: '#6fd3f5', roughness: 0.5 },
   { url: u('viscera'), urlF: u('viscera'), system: 'visceras', color: '#c77dff', roughness: 0.55 },
   { url: u('vessels'), urlF: u('vessels'), system: 'vascular', color: '#c1121f', roughness: 0.45 },
-  { urlF: u('repro_f'), system: 'reproductor', color: '#f472b6', roughness: 0.55 },
+  { urlF: u('repro_f'), system: 'reproductor', color: '#e58aa6', roughness: 0.55 },
   { urlF: u('senses_f'), system: 'sensorial', color: '#86efac', roughness: 0.3 },
 ]
 
