@@ -1,9 +1,18 @@
 @import "tailwindcss";
 
-:root { color-scheme: dark; }
+/* Semantic tokens: values come from src/lib/themes.ts (applied on <html> at runtime); these are the Medianoche defaults. */
+:root {
+  --app: #0b1026; --surface: #0f1428; --card: rgba(255,255,255,.06); --card-hover: rgba(255,255,255,.12);
+  --fg: #e6ebf7; --muted: #9aa6c2; --line: rgba(255,255,255,.1); --accent: #2dd4bf; --accent-ink: #04201d;
+  color-scheme: dark;
+}
+@theme inline {
+  --color-app: var(--app); --color-surface: var(--surface); --color-card: var(--card); --color-card-hover: var(--card-hover);
+  --color-fg: var(--fg); --color-muted: var(--muted); --color-line: var(--line); --color-accent: var(--accent); --color-accent-ink: var(--accent-ink);
+}
 html, body, #root { height: 100%; width: 100%; overflow: hidden; }
-body { @apply bg-[#0b1026] text-slate-100 antialiased; }
+body { background: var(--app); color: var(--fg); @apply antialiased; }
 canvas { touch-action: none; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }

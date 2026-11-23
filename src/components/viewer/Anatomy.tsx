@@ -3,17 +3,10 @@ import { OrbitControls, useGLTF } from '@react-three/drei'
 import { useThree, type ThreeEvent } from '@react-three/fiber'
 import { DoubleSide, FrontSide, Vector3, type Mesh } from 'three'
 import { useClip } from './clip'
-import { structures, type System } from '../../data/anatomy'
+import { structures } from '../../data/anatomy'
+import { FILES, type LayerFile } from '../../lib/models'
 import { useAnatomyStore } from '../../store/useAnatomyStore'
 
-const FILES = [
-  { url: `${import.meta.env.BASE_URL}models/bones.glb`, system: 'esqueleto' as System, color: '#e6dcc3', roughness: 0.65 },
-  { url: `${import.meta.env.BASE_URL}models/muscles.glb`, system: 'musculos' as System, color: '#b5483f', roughness: 0.55 },
-  { url: `${import.meta.env.BASE_URL}models/nerves.glb`, system: 'nervioso' as System, color: '#f2c94c', roughness: 0.5 },
-  { url: `${import.meta.env.BASE_URL}models/lymph.glb`, system: 'linfatico' as System, color: '#6fd3f5', roughness: 0.5 },
-  { url: `${import.meta.env.BASE_URL}models/viscera.glb`, system: 'visceras' as System, color: '#c77dff', roughness: 0.55 },
-  { url: `${import.meta.env.BASE_URL}models/vessels.glb`, system: 'vascular' as System, color: '#c1121f', roughness: 0.45 },
-]
 
 /** Ids shown right now, in data order: they define the cells of the exploded grid. */
 function useGridIds(): readonly string[] {
@@ -25,7 +18,7 @@ function useGridIds(): readonly string[] {
 
 const CELL = 0.55
 
-function Layer({ url, system, color, roughness }: (typeof FILES)[number]) {
+function Layer({ url, system, color, roughness }: LayerFile) {
   const { scene } = useGLTF(url)
   const meshes = useMemo(() => {
     const out: Mesh[] = []
@@ -40,6 +33,7 @@ function Layer({ url, system, color, roughness }: (typeof FILES)[number]) {
   const quizTarget = useAnatomyStore((s) => s.quizTarget)
   const focusIds = useAnatomyStore((s) => s.focusIds)
   const studying = useAnatomyStore((s) => s.studyMode !== 'off')
+  const setHover = useAnatomyStore((s) => s.setHover)
   const clip = useClip()
   const explode = useAnatomyStore((s) => s.explode)
   const gridIds = useGridIds()
@@ -91,6 +85,8 @@ function Layer({ url, system, color, roughness }: (typeof FILES)[number]) {
             geometry={m.geometry}
             position={pos}
             scale={s}
+            onPointerOver={selectable && !studying ? (e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHover(id) } : undefined}
+            onPointerOut={selectable && !studying ? () => setHover(null) : undefined}
             onClick={selectable && !studying ? (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); setSelected(id) } : undefined}
           >
             <meshStandardMaterial color={color} roughness={roughness} clippingPlanes={clip} side={clip ? DoubleSide : FrontSide} emissive={selectedId === id || quizTarget === id ? '#2dd4bf' : '#000000'} emissiveIntensity={selectedId === id || quizTarget === id ? 0.45 : 0} />

@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { structures, type Region, type System } from '../data/anatomy'
+import type { ThemeId } from '../lib/themes'
 
 export type Gender = 'male' | 'female'
 export type StudyMode = 'off' | 'quiz' | 'cards'
 export type GroupBy = 'system' | 'region'
 export type View = 'home' | 'viewer'
+export type Quality = 'ahorro' | 'normal' | 'alta'
 export type CamPreset = 'front' | 'back' | 'side' | 'persp'
 
 interface AnatomyState {
@@ -29,6 +31,17 @@ interface AnatomyState {
   sectionY: number | null
   setSectionY: (y: number | null) => void
   view: View
+  theme: ThemeId
+  setTheme: (t: ThemeId) => void
+  showGround: boolean
+  setShowGround: (v: boolean) => void
+  autoRotate: boolean
+  setAutoRotate: (v: boolean) => void
+  quality: Quality
+  setQuality: (q: Quality) => void
+  resetSettings: () => void
+  hoverId: string | null
+  setHover: (id: string | null) => void
   explode: number
   setExplode: (n: number) => void
   camPreset: { id: CamPreset; n: number }
@@ -75,6 +88,17 @@ export const useAnatomyStore = create<AnatomyState>()(
       sectionY: null,
       setSectionY: (sectionY) => set({ sectionY }),
       view: 'home',
+      theme: 'medianoche',
+      setTheme: (theme) => set({ theme }),
+      showGround: false,
+      setShowGround: (showGround) => set({ showGround }),
+      autoRotate: false,
+      setAutoRotate: (autoRotate) => set({ autoRotate }),
+      quality: 'normal',
+      setQuality: (quality) => set({ quality }),
+      resetSettings: () => set({ theme: 'medianoche', showGround: false, autoRotate: false, quality: 'normal', gender: 'male' }),
+      hoverId: null,
+      setHover: (hoverId) => set({ hoverId }),
       explode: 0,
       setExplode: (explode) => set({ explode }),
       camPreset: { id: 'persp', n: 0 },
@@ -92,6 +116,6 @@ export const useAnatomyStore = create<AnatomyState>()(
       cameraReset: 0,
       resetCamera: () => set((s) => ({ cameraReset: s.cameraReset + 1 })),
     }),
-    { name: 'atlas-anatomia-v3', partialize: (s) => ({ gender: s.gender, groupBy: s.groupBy, activeSystems: s.activeSystems, showLabels: s.showLabels }) }
+    { name: 'atlas-anatomia-v3', partialize: (s) => ({ gender: s.gender, theme: s.theme, showGround: s.showGround, autoRotate: s.autoRotate, quality: s.quality, groupBy: s.groupBy, activeSystems: s.activeSystems, showLabels: s.showLabels }) }
   )
 )

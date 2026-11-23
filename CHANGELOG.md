@@ -5,6 +5,8 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Configuración: 6 paletas (Medianoche, rosa y blanco, todo rosa, rojo y negro, rojo y blanco, rosa y negro), modelo, suelo, giro automático y calidad gráfica; se recuerda entre sesiones.
+- Nombre de la estructura al pasar el cursor; precarga de la capa al apuntar la tarjeta.
 - Portada propia: tarjetas compactas de sistemas, regiones y estudio; el cuerpo solo aparece al elegir una sección.
 - Visor a pantalla completa con barras finas (capas a la izquierda, herramientas a la derecha), vistas Frente/Atrás/Lado/Perspectiva y despiece en cuadrícula (Ensamblado ↔ Separado).
 - Unión con el historial del repo anterior (`origin/main`): su app JS archivada en `legacy/`, créditos en `public/`, workflow de Pages adaptado (`BASE_PATH`).
@@ -23,6 +25,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - `Scene` cargada con `React.lazy`; entorno de luz local (sin HDR remoto).
 
 ### Removed
+- Disco de suelo redondo y sombras de contacto bajo el cuerpo (ahora opcional en Configuración, apagado).
 - Primitivas geométricas de `HumanModel` y carpeta duplicada `atlas_anatomy/`.
 
 ### Fixed
