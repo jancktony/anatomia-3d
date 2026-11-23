@@ -1,7 +1,7 @@
 // Female atlas (Human Reference Atlas v1.5 + BodyParts3D): which part goes into which structure id / layer file.
 // First matching rule wins; the last rule of each layer is the catch-all "-resto".
 export const LAYERS = {
-  senses_f: { systems: ['sensory'], rules: [['ojos', /./]] },
+  senses_f: { systems: ['sensory'], rules: [['oidos', /external ear|ear|auric/i], ['ojos', /./]] },
   bones_f: { systems: ['skeletal'], rules: [
     ['craneo', /skull|cranial|cranium|frontal bone|parietal|occipital|temporal bone|sphenoid|ethmoid|mandible|maxilla|zygomatic|nasal bone|lacrimal|palatine bone|vomer/i],
     ['columna-vertebral', /vertebra|sacrum|coccyx|atlas|axis|intervertebral/i],
@@ -20,7 +20,7 @@ export const LAYERS = {
     ['musculos-resto', /./],
   ] },
   nerves_f: { systems: ['nervous'], rules: [
-    ['encefalo', /brain|cerebr|cerebell|hippocamp|thalam|gyrus|medulla oblongata|midbrain|pons|corpus callosum|ventricle|caudate|putamen|hypothalam|lobe/i],
+    ['encefalo', /nuclear|nucleus|dura mater|choroid plexus|pontine|brain|cerebr|cerebell|hippocamp|thalam|gyrus|medulla oblongata|midbrain|pons|corpus callosum|ventricle|caudate|putamen|hypothalam|lobe/i],
     ['medula-espinal', /spinal cord/i],
     ['nervio-ciatico', /sciatic/i],
     ['nervioso-resto', /./],
@@ -64,5 +64,14 @@ export const groupOf = (layer, name) => LAYERS[layer].rules.find(([, re]) => re.
 // a 2 cm lymph-node detail model (Yao_*) and compact/trabecular "bone tissue" cut-aways that overlap the hip bones add noise, not anatomy
 export const EXCLUDE = (p) => p.id.startsWith('Yao_') || /(trabecular|compact) bone tissue/i.test(p.name)
 // palatine tonsils are filed under "digestive" in the dataset
-export const layerFor = (p) => (EXCLUDE(p) ? undefined : /tonsil/i.test(p.name) ? 'lymph_f' : layerOf(p.system))
+// misfiled parts: tonsils sit under "digestive"; the iliotibial tract (a 61 cm fascia band) under "skeletal" and was drawn like bone;
+// brain nuclei / dura / choroid plexus / lacrimal bone under "sensory"; wrist retinacula are not sense organs
+export const layerFor = (p) => {
+  if (EXCLUDE(p) || /retinaculum/i.test(p.name)) return undefined
+  if (/tonsil/i.test(p.name)) return 'lymph_f'
+  if (/iliotibial tract/i.test(p.name)) return 'muscles_f'
+  if (p.system === 'sensory' && /nuclear|nucleus|dura mater|choroid plexus/i.test(p.name)) return 'nerves_f'
+  if (/lacrimal bone/i.test(p.name)) return 'bones_f'
+  return layerOf(p.system)
+}
 export const layerOf = (system) => Object.entries(LAYERS).find(([, l]) => l.systems.includes(system))?.[0]

@@ -82,13 +82,14 @@ export const structures: Structure[] = [
   { id: 'mama', name: 'Glándula Mamaria', latinName: 'Glandula mammaria', system: 'reproductor', only: 'female', description: 'Glándula de la pared torácica anterior formada por lobulillos y tejido graso.', function: 'Producción de leche durante la lactancia', tags: ['torax', 'reproductor'] },
   { id: 'vagina', name: 'Vagina y Vulva', latinName: 'Vagina', system: 'reproductor', only: 'female', description: 'Conducto fibromuscular que une el cuello uterino con el vestíbulo vulvar.', function: 'Canal del parto y salida del flujo menstrual', tags: ['pelvis', 'reproductor'] },
   { id: 'embarazo', name: 'Embarazo (feto y placenta)', latinName: 'Graviditas', system: 'reproductor', only: 'female', description: 'Feto, placenta y membranas dentro del útero gestante.', function: 'Desarrollo fetal e intercambio materno-fetal', tags: ['pelvis', 'reproductor'] },
-  { id: 'ojos', name: 'Ojos', latinName: 'Oculi', system: 'sensorial', only: 'female', description: 'Globos oculares con córnea, iris, cristalino, cuerpo vítreo y retina.', function: 'Recepción de la luz y formación de la imagen visual', tags: ['cabeza', 'vision'] },
+  { id: 'ojos', name: 'Ojos', latinName: 'Oculi', system: 'sensorial', only: 'female', description: 'Globos oculares con córnea, iris, cristalino, cuerpo vítreo y retina, más vías lagrimales y párpados.', function: 'Recepción de la luz y formación de la imagen visual', tags: ['cabeza', 'vision'] },
+  { id: 'oidos', name: 'Oído Externo', latinName: 'Auris externa', system: 'sensorial', only: 'female', description: 'Pabellón auricular a cada lado de la cabeza.', function: 'Capta y dirige las ondas sonoras hacia el conducto auditivo', tags: ['cabeza', 'audicion'] },
 ]
 
 export interface Region { id: string; label: string; color: string; ids: readonly string[] }
 
 export const regions: readonly Region[] = [
-  { id: 'cabeza-cuello', label: 'Cabeza y cuello', color: '#f4a261', ids: ['craneo', 'encefalo', 'ojos', 'amigdalas', 'ganglios-cervicales', 'tiroides'] },
+  { id: 'cabeza-cuello', label: 'Cabeza y cuello', color: '#f4a261', ids: ['craneo', 'encefalo', 'ojos', 'oidos', 'amigdalas', 'ganglios-cervicales', 'tiroides'] },
   { id: 'torax', label: 'Tórax', color: '#e63946', ids: ['esternon', 'costillas', 'corazon', 'aorta', 'pulmones', 'traquea-bronquios', 'esofago', 'timo', 'pectorales-mayor', 'mama'] },
   { id: 'abdomen-pelvis', label: 'Abdomen y pelvis', color: '#9d4edd', ids: ['higado', 'estomago', 'pancreas', 'vesicula-biliar', 'bazo', 'rinones', 'intestino-delgado', 'intestino-grueso', 'vejiga-urinaria', 'utero', 'ovarios', 'vagina', 'embarazo'] },
   { id: 'miembro-superior', label: 'Miembro superior', color: '#e85d5d', ids: ['humerus', 'radio', 'cubito', 'deltoides', 'biceps-braquial', 'triceps-braquial', 'ganglios-axilares'] },
