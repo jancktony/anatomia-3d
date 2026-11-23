@@ -32,6 +32,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - Primitivas geométricas de `HumanModel` y carpeta duplicada `atlas_anatomy/`.
 
 ### Fixed
+- Embarazo: las 8 piezas del sistema `pregnancy` (placa basal, placa coriónica, amnios, cordón) iban sueltas delante del abdomen; ahora forman la estructura Embarazo, visible solo al seleccionarla.
 - Se descarta la piel de `female-atlas` (BodyParts3D, masculina), el tejido óseo duplicado sobre las caderas y un modelo de ganglio de 2 cm; el tema se aplica antes del primer pintado.
 - Encabezado GLB de los cuerpos (versión y longitud invertidas).
 - IDs con tilde (`cubito`, `encefalo`).

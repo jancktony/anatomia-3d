@@ -58,6 +58,8 @@ export const LAYERS = {
   ] },
 }
 
+// every part of the dataset's "pregnancy" system (placental plates, amnion, cord...) is the gravid set, whatever its name
+export const groupFor = (layer, p) => (p.system === 'pregnancy' ? 'embarazo' : groupOf(layer, p.name))
 export const groupOf = (layer, name) => LAYERS[layer].rules.find(([, re]) => re.test(name))?.[0]
 // a 2 cm lymph-node detail model (Yao_*) and compact/trabecular "bone tissue" cut-aways that overlap the hip bones add noise, not anatomy
 export const EXCLUDE = (p) => p.id.startsWith('Yao_') || /(trabecular|compact) bone tissue/i.test(p.name)

@@ -4,10 +4,10 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { join } from 'node:path'
 import { MeshoptSimplifier } from 'meshoptimizer'
-import { LAYERS, groupOf, layerFor } from './female_groups.mjs'
+import { LAYERS, groupFor, layerFor } from './female_groups.mjs'
 import { writeGlb } from './glb.mjs'
 
-const [,, src, out] = process.argv
+const [,, src, out, only] = process.argv // optional 3rd arg: rebuild a single layer, e.g. repro_f
 const BUDGET = { bones_f: 160000, muscles_f: 200000, nerves_f: 120000, vessels_f: 130000, lymph_f: 40000, viscera_f: 140000, repro_f: 80000, senses_f: 40000 }
 const WORLD_H = 2.05, FEET_Y = -0.34 // matches the female skin in tools/build_bodies.py
 
@@ -46,6 +46,7 @@ for (const p of atlas.parts) {
 
 const ids = new Set()
 for (const [layer, parts] of Object.entries(byLayer)) {
+  if (only && layer !== only) continue
   parts.sort((a, b) => a.chunk - b.chunk)
   const total = parts.reduce((s, p) => s + p.indexCount / 3, 0)
   const ratio = Math.min(1, BUDGET[layer] / total)
@@ -56,7 +57,7 @@ for (const [layer, parts] of Object.entries(byLayer)) {
     let idx = idx0
     const tris = idx.length / 3
     if (tris > 100) [idx] = MeshoptSimplifier.simplify(idx, pos, 3, Math.max(100, Math.floor(tris * ratio)) * 3, 0.06)
-    const g = groups.get(groupOf(layer, p.name)), remap = new Map()
+    const g = groups.get(groupFor(layer, p)), remap = new Map()
     for (const i of idx) {
       let id = remap.get(i)
       if (id === undefined) { id = g.base + remap.size; remap.set(i, id); g.pos.push(pos[i * 3] * S, pos[i * 3 + 1] * S + FEET_Y, pos[i * 3 + 2] * S) }
@@ -69,4 +70,4 @@ for (const [layer, parts] of Object.entries(byLayer)) {
   console.log(layer.padEnd(10), 'inputTris', Math.round(total), 'bytes', bytes, Object.entries(report).map(([k, v]) => `${k}:${Math.round(v.tris)}`).join(' '))
 }
 // selectable ids available in female mode (the "-resto" pieces are not selectable)
-writeFileSync(join(out, 'female-ids.json'), JSON.stringify([...ids].filter((k) => !k.endsWith('-resto')).sort()))
+if (!only) writeFileSync(join(out, 'female-ids.json'), JSON.stringify([...ids].filter((k) => !k.endsWith('-resto')).sort()))
