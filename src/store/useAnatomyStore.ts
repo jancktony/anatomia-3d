@@ -1,10 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { System } from '../data/anatomy'
+import { structures, type Region, type System } from '../data/anatomy'
 
 export type Gender = 'male' | 'female'
 export type StudyMode = 'off' | 'quiz' | 'cards'
 export type GroupBy = 'system' | 'region'
+export type View = 'home' | 'viewer'
+export type CamPreset = 'front' | 'back' | 'side' | 'persp'
 
 interface AnatomyState {
   gender: Gender
@@ -26,6 +28,19 @@ interface AnatomyState {
   setQuizTarget: (id: string | null) => void
   sectionY: number | null
   setSectionY: (y: number | null) => void
+  view: View
+  explode: number
+  setExplode: (n: number) => void
+  camPreset: { id: CamPreset; n: number }
+  setCamPreset: (id: CamPreset) => void
+  focusIds: readonly string[] | null
+  focusLabel: string | null
+  goHome: () => void
+  openSystem: (id: System, label: string) => void
+  openRegion: (r: Region) => void
+  openStructure: (id: string) => void
+  openSkin: () => void
+  openStudy: (m: Exclude<StudyMode, 'off'>) => void
   groupBy: GroupBy
   setGroupBy: (g: GroupBy) => void
   cameraReset: number
@@ -39,6 +54,7 @@ export const useAnatomyStore = create<AnatomyState>()(
       setGender: (gender) => set({ gender }),
       activeSystems: ['piel'],
       toggleSystem: (s) => set((state) => ({
+        focusIds: null,
         activeSystems: state.activeSystems.includes(s)
           ? state.activeSystems.filter((x) => x !== s)
           : [...state.activeSystems, s]
@@ -58,6 +74,19 @@ export const useAnatomyStore = create<AnatomyState>()(
       setQuizTarget: (quizTarget) => set({ quizTarget }),
       sectionY: null,
       setSectionY: (sectionY) => set({ sectionY }),
+      view: 'home',
+      explode: 0,
+      setExplode: (explode) => set({ explode }),
+      camPreset: { id: 'persp', n: 0 },
+      setCamPreset: (id) => set((s) => ({ camPreset: { id, n: s.camPreset.n + 1 } })),
+      focusIds: null,
+      focusLabel: null,
+      goHome: () => set({ view: 'home', studyMode: 'off', selectedId: null, isolatedId: null, quizTarget: null, focusIds: null, focusLabel: null, sectionY: null, explode: 0 }),
+      openSystem: (id, label) => set({ view: 'viewer', activeSystems: [id], focusIds: null, focusLabel: label, selectedId: null, isolatedId: null, studyMode: 'off' }),
+      openRegion: (r) => set({ view: 'viewer', activeSystems: [...new Set(structures.filter((s) => r.ids.includes(s.id)).map((s) => s.system))], focusIds: r.ids, focusLabel: r.label, selectedId: null, isolatedId: null, studyMode: 'off' }),
+      openStructure: (id) => set({ view: 'viewer', focusIds: null, focusLabel: null, selectedId: id, isolatedId: id, studyMode: 'off' }),
+      openSkin: () => set({ view: 'viewer', activeSystems: ['piel'], focusIds: null, focusLabel: 'Cuerpo', selectedId: null, isolatedId: null, studyMode: 'off' }),
+      openStudy: (studyMode) => set({ view: 'viewer', studyMode, focusIds: null, focusLabel: 'Estudio', selectedId: null, isolatedId: null, quizTarget: null }),
       groupBy: 'system',
       setGroupBy: (groupBy) => set({ groupBy }),
       cameraReset: 0,

@@ -1,6 +1,6 @@
 # Atlas Anatómico 3D
 
-Last updated: 2026-11-23 10:50 AM CST
+Last updated: 2026-11-23 12:30 PM CST
 
 Visor anatómico interactivo (React 19, TypeScript, Vite, react-three-fiber, Zustand). Producción: https://atlas-anatomia-five.vercel.app
 
@@ -11,9 +11,11 @@ npm run dev      # http://localhost:5179
 npm test         # vitest
 npm run build    # tsc -b + vite build
 ```
-Selector Hombre/Mujer; activa capas (Esquelético, Muscular, Nervioso, Vascular) o la piel. La piel solo se muestra sin capas internas.
+Selector Hombre/Mujer; las capas se activan desde la barra izquierda. La piel solo se muestra sin capas internas.
 
 ## Funciones
+- **Portada** de tarjetas compactas (sistemas, regiones, estudio); el cuerpo no se muestra hasta elegir una sección.
+- **Visor**: barras finas a los lados, vistas Frente/Atrás/Lado/Perspectiva y **despiece**: las estructuras se separan en cuadrícula.
 - Capas por sistema, cuerpos hombre/mujer, búsqueda, agrupación por sistema o región.
 - **Estudio**: quiz (fácil 3 opciones con pista latina, medio 4, difícil 6 resaltada en su capa) y tarjetas.
 - **Corte axial**: plano horizontal con deslizador.

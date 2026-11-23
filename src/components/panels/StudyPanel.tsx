@@ -52,7 +52,7 @@ export default function StudyPanel() {
   )
 
   return (
-    <section aria-label="Estudio" className="absolute top-4 right-4 w-80 max-h-[calc(100%-2rem)] overflow-y-auto rounded-xl border border-white/10 bg-[#0f1428]/95 backdrop-blur p-4 shadow-xl">
+    <section aria-label="Estudio" className="absolute top-16 right-16 w-80 z-10 max-h-[calc(100%-2rem)] overflow-y-auto rounded-xl border border-white/10 bg-[#0f1428]/95 backdrop-blur p-4 shadow-xl">
       <div className="flex items-center justify-between mb-3">
         <div className="flex w-full mr-3 rounded-lg bg-white/5 p-0.5">{tab('quiz', 'Quiz')}{tab('cards', 'Tarjetas')}</div>
         <button aria-label="Cerrar estudio" onClick={() => setStudyMode('off')} className="text-slate-400 hover:text-slate-200"><X size={18} /></button>

@@ -4,7 +4,7 @@ import { OrbitControls, Environment, Lightformer, ContactShadows, Html, useProgr
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 import { Body, preloadBodies } from './Body'
 import { Anatomy } from './Anatomy'
-import { useAnatomyStore } from '../../store/useAnatomyStore'
+import { useAnatomyStore, type CamPreset } from '../../store/useAnatomyStore'
 
 preloadBodies()
 
@@ -22,16 +22,24 @@ function Loader() {
   )
 }
 
+const PRESETS: Readonly<Record<CamPreset, readonly [number, number, number]>> = {
+  front: [0, 0.9, 4.4],
+  back: [0, 0.9, -4.4],
+  side: [4.4, 0.9, 0],
+  persp: [2.8, 1.6, 3.6],
+}
+
 function CameraReset({ controlsRef }: { controlsRef: RefObject<ComponentRef<typeof OrbitControls> | null> }) {
   const cameraReset = useAnatomyStore((s) => s.cameraReset)
+  const preset = useAnatomyStore((s) => s.camPreset)
   const { camera } = useThree()
   useEffect(() => {
-    if (controlsRef.current) {
-      camera.position.set(2.8, 1.6, 3.6)
-      controlsRef.current.target.set(0, 0.9, 0)
-      controlsRef.current.update()
-    }
-  }, [cameraReset, camera, controlsRef])
+    if (!controlsRef.current) return
+    const [x, y, z] = PRESETS[preset.id]
+    camera.position.set(x, y, z)
+    controlsRef.current.target.set(0, 0.9, 0)
+    controlsRef.current.update()
+  }, [cameraReset, preset, camera, controlsRef])
   return null
 }
 

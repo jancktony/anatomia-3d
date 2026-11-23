@@ -12,8 +12,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Atlas Anatómico 3D',
-        short_name: 'Anatomía3D',
+        name: 'Anatomía 3D',
+        short_name: 'Anatomía 3D',
         description: 'Atlas anatómico 3D interactivo, detallado y realista',
         theme_color: '#0b1026',
         background_color: '#0b1026',

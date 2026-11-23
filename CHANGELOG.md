@@ -5,6 +5,8 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Portada propia: tarjetas compactas de sistemas, regiones y estudio; el cuerpo solo aparece al elegir una sección.
+- Visor a pantalla completa con barras finas (capas a la izquierda, herramientas a la derecha), vistas Frente/Atrás/Lado/Perspectiva y despiece en cuadrícula (Ensamblado ↔ Separado).
 - Unión con el historial del repo anterior (`origin/main`): su app JS archivada en `legacy/`, créditos en `public/`, workflow de Pages adaptado (`BASE_PATH`).
 - Estudio: quiz con 3 niveles de dificultad y tarjetas; la estructura se aísla y la cámara la encuadra.
 - Agrupar por sistema o por región; corte axial con deslizador; panel de referencias y reseñas con fuentes.
