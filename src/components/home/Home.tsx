@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Search, Brain, Settings } from 'lucide-react'
-import { structures, systems, regions, type System } from '../../data/anatomy'
+import { systems, regions, type System } from '../../data/anatomy'
+import { availableFor } from '../../lib/available'
 import { prefetchSystem } from '../../lib/models'
 import { useAnatomyStore } from '../../store/useAnatomyStore'
 
@@ -28,11 +29,12 @@ export default function Home({ onSettings }: { onSettings: () => void }) {
   // warm the viewer chunk while the user reads the home
   useEffect(() => { const id = window.setTimeout(() => { void import('../viewer/Scene') }, 1200); return () => window.clearTimeout(id) }, [])
   const [q, setQ] = useState('')
+  const pool = availableFor(gender)
   const needle = q.trim().toLowerCase()
   const found = needle
-    ? structures.filter((s) => s.name.toLowerCase().includes(needle) || s.latinName?.toLowerCase().includes(needle) || s.tags?.some((t) => t.toLowerCase().includes(needle)))
+    ? pool.filter((s) => s.name.toLowerCase().includes(needle) || s.latinName?.toLowerCase().includes(needle) || s.tags?.some((t) => t.toLowerCase().includes(needle)))
     : []
-  const count = (id: string) => structures.filter((s) => s.system === id).length
+  const count = (id: string) => pool.filter((s) => s.system === id).length
 
   return (
     <div className="h-screen w-screen overflow-y-auto bg-app">
@@ -68,17 +70,17 @@ export default function Home({ onSettings }: { onSettings: () => void }) {
               <Card n="2" label="Cuerpo" hint="hombre y mujer" color="#fca311" onClick={openSkin} />
             </Group>
             <Group title="Regiones">
-              {regions.map((r) => <Card key={r.id} n={r.ids.length} label={r.label} hint="estructuras" color={r.color} onClick={() => openRegion(r)} />)}
+              {regions.map((r) => ({ r, ids: r.ids.filter((id) => pool.some((x) => x.id === id)) })).filter((x) => x.ids.length > 0).map(({ r, ids }) => <Card key={r.id} n={ids.length} label={r.label} hint="estructuras" color={r.color} onClick={() => openRegion({ ...r, ids })} />)}
             </Group>
             <Group title="Estudio">
-              <Card n={structures.length} label="Quiz" hint="3 niveles" color="#2dd4bf" onClick={() => openStudy('quiz')} />
-              <Card n={structures.length} label="Tarjetas" hint="repaso" color="#2dd4bf" onClick={() => openStudy('cards')} />
+              <Card n={pool.length} label="Quiz" hint="3 niveles" color="#2dd4bf" onClick={() => openStudy('quiz')} />
+              <Card n={pool.length} label="Tarjetas" hint="repaso" color="#2dd4bf" onClick={() => openStudy('cards')} />
               <Card n="⚙" label="Configuración" hint="colores y más" color="#94a3b8" onClick={onSettings} />
             </Group>
           </>
         )}
         <footer className="flex items-center gap-3 text-[10px] text-muted pb-4">
-          <span>Huesos, músculos, nervios, vasos, linfático y vísceras: Z-Anatomy (CC BY-SA 4.0) · Cuerpo: MakeHuman (CC0)</span>
+          <span>Capas: Z-Anatomy (CC BY-SA 4.0, hombre) y Human Reference Atlas + BodyParts3D (CC BY 4.0, mujer) · Cuerpo: MakeHuman (CC0)</span>
 
         </footer>
       </div>

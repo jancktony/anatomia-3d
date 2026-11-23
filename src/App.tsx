@@ -7,6 +7,7 @@ import ReferencesPanel from './components/panels/ReferencesPanel'
 import SettingsPanel from './components/panels/SettingsPanel'
 import { applyTheme } from './lib/themes'
 import { structures, systems } from './data/anatomy'
+import { availableFor } from './lib/available'
 import { useAnatomyStore, type CamPreset } from './store/useAnatomyStore'
 import { ArrowLeft, List, Scissors, Boxes, Target, RotateCcw, Eye, Settings } from 'lucide-react'
 
@@ -23,6 +24,7 @@ function Viewer({ onSettings }: { onSettings: () => void }) {
   const s = useAnatomyStore()
   const [listOpen, setListOpen] = useState(false)
   const sel = structures.find((x) => x.id === s.selectedId)
+  const pool = availableFor(s.gender)
   const hover = structures.find((x) => x.id === s.hoverId)
   const title = hover?.name ?? sel?.name ?? s.focusLabel ?? 'Atlas'
   const Btn = ({ label, pressed, onClick, children }: { label: string; pressed?: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -38,7 +40,7 @@ function Viewer({ onSettings }: { onSettings: () => void }) {
         <Btn label="Volver al inicio" onClick={s.goHome}><ArrowLeft size={18} /></Btn>
         <Btn label="Lista de estructuras" pressed={listOpen} onClick={() => setListOpen((v) => !v)}><List size={18} /></Btn>
         <div className="h-px w-6 bg-card-hover" />
-        {systems.map((sys) => {
+        {systems.filter((sys) => sys.id === 'piel' || pool.some((x) => x.system === sys.id)).map((sys) => {
           const on = s.activeSystems.includes(sys.id)
           return (
             <button key={sys.id} aria-label={`Capa ${sys.label}`} title={sys.label} aria-pressed={on} onClick={() => s.toggleSystem(sys.id)} className="grid size-9 place-items-center rounded-lg hover:bg-card-hover">
@@ -78,7 +80,7 @@ function Viewer({ onSettings }: { onSettings: () => void }) {
           </label>
         )}
       </div>
-      <div className="absolute bottom-1 right-14 z-10 text-[10px] text-muted">Z-Anatomy (CC BY-SA 4.0) · MakeHuman (CC0)</div>
+      <div className="absolute bottom-1 right-14 z-10 text-[10px] text-muted">{s.gender === 'female' ? 'Human Reference Atlas + BodyParts3D (CC BY 4.0)' : 'Z-Anatomy (CC BY-SA 4.0)'} · MakeHuman (CC0)</div>
     </div>
   )
 }

@@ -4,7 +4,8 @@ import { useThree, type ThreeEvent } from '@react-three/fiber'
 import { DoubleSide, FrontSide, Vector3, type Mesh } from 'three'
 import { useClip } from './clip'
 import { structures } from '../../data/anatomy'
-import { FILES, type LayerFile } from '../../lib/models'
+import { FILES, layerUrl, type LayerFile } from '../../lib/models'
+import { availableFor } from '../../lib/available'
 import { useAnatomyStore } from '../../store/useAnatomyStore'
 
 
@@ -13,12 +14,15 @@ function useGridIds(): readonly string[] {
   const active = useAnatomyStore((s) => s.activeSystems)
   const focus = useAnatomyStore((s) => s.focusIds)
   const iso = useAnatomyStore((s) => s.isolatedId)
-  return useMemo(() => structures.filter((s) => (iso ? s.id === iso : focus ? focus.includes(s.id) : active.includes(s.system))).map((s) => s.id), [active, focus, iso])
+  const gender = useAnatomyStore((s) => s.gender)
+  return useMemo(() => availableFor(gender).filter((s) => (iso ? s.id === iso : !ON_DEMAND.has(s.id) && (focus ? focus.includes(s.id) : active.includes(s.system)))).map((s) => s.id), [active, focus, iso, gender])
 }
 
 const CELL = 0.55
+// the pregnancy set is a separate gravid uterus that overlaps the normal one: only show it when picked on its own
+const ON_DEMAND = new Set(['embarazo'])
 
-function Layer({ url, system, color, roughness }: LayerFile) {
+function Layer({ url, system, color, roughness }: Pick<LayerFile, 'system' | 'color' | 'roughness'> & { url: string }) {
   const { scene } = useGLTF(url)
   const meshes = useMemo(() => {
     const out: Mesh[] = []
@@ -29,7 +33,6 @@ function Layer({ url, system, color, roughness }: LayerFile) {
   const isolatedId = useAnatomyStore((s) => s.isolatedId)
   const selectedId = useAnatomyStore((s) => s.selectedId)
   const setSelected = useAnatomyStore((s) => s.setSelected)
-  const gender = useAnatomyStore((s) => s.gender)
   const quizTarget = useAnatomyStore((s) => s.quizTarget)
   const focusIds = useAnatomyStore((s) => s.focusIds)
   const studying = useAnatomyStore((s) => s.studyMode !== 'off')
@@ -51,19 +54,17 @@ function Layer({ url, system, color, roughness }: LayerFile) {
     if (!m || !controls) return
     m.geometry.computeBoundingBox()
     const box = m.geometry.boundingBox!
-    const k = gender === 'female' ? 0.936 : 1
-    const c = box.getCenter(new Vector3()).multiplyScalar(k)
-    if (k !== 1) c.y += -0.34 * (1 - k)
+    const c = box.getCenter(new Vector3())
     const dir = camera.position.clone().sub(controls.target).normalize()
     controls.target.copy(c)
-    camera.position.copy(c).addScaledVector(dir, Math.max(box.getSize(new Vector3()).length() * k * 1.8, 0.3))
+    camera.position.copy(c).addScaledVector(dir, Math.max(box.getSize(new Vector3()).length() * 1.8, 0.3))
     controls.update()
-  }, [isolatedId, meshes, controls, camera, gender])
+  }, [isolatedId, meshes, controls, camera])
   return (
-    <group scale={gender === 'female' ? 0.936 : 1} position={[0, gender === 'female' ? -0.34 * (1 - 0.936) : 0, 0]}>
+    <group>
       {meshes.map((m) => {
         const id = m.name
-        const visible = isolatedId ? isolatedId === id : focusIds ? focusIds.includes(id) : active
+        const visible = isolatedId ? isolatedId === id : ON_DEMAND.has(id) ? false : focusIds ? focusIds.includes(id) : active
         if (!visible) return null
         const cell = gridIds.indexOf(id)
         if (explode > 0 && cell < 0) return null // "-resto" pieces have no cell in the exploded grid
@@ -100,7 +101,11 @@ function Layer({ url, system, color, roughness }: LayerFile) {
 // Mount (and fetch) a layer only when needed; the SW precaches the rest in the background.
 export function Anatomy() {
   const active = useAnatomyStore((s) => s.activeSystems)
+  const gender = useAnatomyStore((s) => s.gender)
   const isolatedSystem = useAnatomyStore((s) => (s.isolatedId ? structures.find((x) => x.id === s.isolatedId)?.system : undefined))
   const isolated = useAnatomyStore((s) => s.isolatedId !== null)
-  return <>{FILES.filter((f) => (isolated ? f.system === isolatedSystem : active.includes(f.system))).map((f) => <Suspense key={f.url} fallback={null}><Layer {...f} /></Suspense>)}</>
+  return <>{FILES.flatMap((f) => {
+    const url = layerUrl(f, gender)
+    return url && (isolated ? f.system === isolatedSystem : active.includes(f.system)) ? [{ ...f, url }] : []
+  }).map((f) => <Suspense key={f.url} fallback={null}><Layer {...f} /></Suspense>)}</>
 }

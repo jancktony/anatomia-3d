@@ -23,7 +23,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,webp,glb,gltf,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         // only skins are precached; layers cache on first use so install doesn't fight the first load
-        globIgnores: ['**/models/{bones,muscles,nerves,vessels,lymph,viscera}.glb'],
+        globIgnores: ['**/models/{bones,muscles,nerves,vessels,lymph,viscera,repro}{,_f}.glb'],
         runtimeCaching: [{ urlPattern: /\.glb$/, handler: 'CacheFirst', options: { cacheName: 'models', expiration: { maxEntries: 8 }, cacheableResponse: { statuses: [0, 200] } } }]
       }
     })

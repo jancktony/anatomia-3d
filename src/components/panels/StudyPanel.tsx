@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { X, Check, XCircle, ChevronLeft, ChevronRight } from 'lucide-react'
-import { structures, systems, type System } from '../../data/anatomy'
+import { systems, type System } from '../../data/anatomy'
+import { availableFor } from '../../lib/available'
 import { useAnatomyStore } from '../../store/useAnatomyStore'
 import { makeQuestion, shuffle, type Difficulty, type Question } from '../../lib/quiz'
 
@@ -17,8 +18,9 @@ export default function StudyPanel() {
   // the pool is fixed when the panel opens so quiz-driven layer changes can't reshuffle it
   const pool = useMemo(() => {
     const inner: readonly System[] = useAnatomyStore.getState().activeSystems.filter((x) => x !== 'piel')
-    const p = structures.filter((s) => !inner.length || inner.includes(s.system))
-    return p.length >= 4 ? p : structures
+    const all = availableFor(useAnatomyStore.getState().gender)
+    const p = all.filter((s) => !inner.length || inner.includes(s.system))
+    return p.length >= 4 ? p : all
   }, [])
   const [question, setQuestion] = useState<Question>(() => makeQuestion(pool, 'facil'))
   const [picked, setPicked] = useState<string | null>(null)

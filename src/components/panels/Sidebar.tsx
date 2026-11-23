@@ -1,19 +1,21 @@
 import { Search, Eye, EyeOff, Brain } from 'lucide-react'
-import { systems, structures, regions, type Structure, type System } from '../../data/anatomy'
+import { systems, regions, type Structure, type System } from '../../data/anatomy'
+import { availableFor } from '../../lib/available'
 import { useAnatomyStore } from '../../store/useAnatomyStore'
 
 const short = (label: string) => label.replace('Sistema ', '')
 
 export default function Sidebar() {
-  const { activeSystems, toggleSystem, searchQuery, setSearch, selectedId, setSelected, setIsolated, groupBy, setGroupBy } = useAnatomyStore()
+  const { activeSystems, toggleSystem, searchQuery, setSearch, selectedId, setSelected, setIsolated, groupBy, setGroupBy, gender } = useAnatomyStore()
+  const pool = availableFor(gender)
   const q = searchQuery.toLowerCase()
   const inner: readonly System[] = activeSystems.filter((x) => x !== 'piel')
-  const visible = structures.filter((s) => {
+  const visible = pool.filter((s) => {
     if (q && !s.name.toLowerCase().includes(q) && !s.latinName?.toLowerCase().includes(q) && !s.tags?.some((t) => t.toLowerCase().includes(q))) return false
     return !inner.length || inner.includes(s.system)
   })
   const groups = groupBy === 'system'
-    ? systems.map((g) => ({ id: g.id as string, label: short(g.label), color: g.color, match: (s: Structure) => s.system === g.id }))
+    ? systems.filter((g) => pool.some((x) => x.system === g.id)).map((g) => ({ id: g.id as string, label: short(g.label), color: g.color, match: (s: Structure) => s.system === g.id }))
     : regions.map((g) => ({ id: g.id, label: g.label, color: g.color, match: (s: Structure) => g.ids.includes(s.id) }))
   const sections = groups
     .map((g) => ({ g, items: visible.filter(g.match).sort((a, b) => a.name.localeCompare(b.name)) }))
@@ -36,9 +38,9 @@ export default function Sidebar() {
       </div>
 
       <div className="p-3 border-b border-line grid grid-cols-2 gap-2">
-        {systems.map((sys) => {
+        {systems.filter((sys) => sys.id === 'piel' || pool.some((x) => x.system === sys.id)).map((sys) => {
           const on = activeSystems.includes(sys.id)
-          const n = structures.filter((s) => s.system === sys.id).length
+          const n = pool.filter((s) => s.system === sys.id).length
           return (
             <button key={sys.id} aria-pressed={on} onClick={() => toggleSystem(sys.id)} className={`rounded-lg p-2 text-left transition border border-line ${on ? 'bg-card-hover' : 'bg-card opacity-50 hover:opacity-80'}`} style={{ borderTop: `3px solid ${sys.color}` }}>
               <div className="flex items-center justify-between text-fg">{on ? <Eye size={14} /> : <EyeOff size={14} />}<span className="text-[10px] text-muted">{n}</span></div>

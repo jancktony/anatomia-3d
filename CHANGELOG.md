@@ -5,6 +5,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Atlas femenino real: capas de la mujer (Human Reference Atlas v1.5 + BodyParts3D) con huesos, músculos, nervios, vasos, linfático y vísceras, y el nuevo sistema Reproductor (útero, ovarios, mama, vagina, embarazo). Conversión con `tools/build_female.mjs`.
 - Configuración: 6 paletas (Medianoche, rosa y blanco, todo rosa, rojo y negro, rojo y blanco, rosa y negro), modelo, suelo, giro automático y calidad gráfica; se recuerda entre sesiones.
 - Nombre de la estructura al pasar el cursor; precarga de la capa al apuntar la tarjeta.
 - Portada propia: tarjetas compactas de sistemas, regiones y estudio; el cuerpo solo aparece al elegir una sección.
