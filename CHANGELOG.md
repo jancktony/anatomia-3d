@@ -32,6 +32,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - Primitivas geométricas de `HumanModel` y carpeta duplicada `atlas_anatomy/`.
 
 ### Fixed
+- Mujer: menisco, ligamentos cruzados, ligamento anterolateral y tendón del cuádriceps (conjunto femenino, 4-7 cm más lateral que los huesos de BodyParts3D) se descartan; flotaban junto a las rodillas.
 - Mujer: el tracto iliotibial (fascia de 61 cm archivada como hueso) pasa a la capa muscular; núcleos cerebrales, duramadre y plexo coroideo al encéfalo; hueso lagrimal al cráneo; retináculos de muñeca descartados; el oído externo es ahora la estructura Oído Externo.
 - Embarazo: las 8 piezas del sistema `pregnancy` (placa basal, placa coriónica, amnios, cordón) iban sueltas delante del abdomen; ahora forman la estructura Embarazo, visible solo al seleccionarla.
 - Se descarta la piel de `female-atlas` (BodyParts3D, masculina), el tejido óseo duplicado sobre las caderas y un modelo de ganglio de 2 cm; el tema se aplica antes del primer pintado.

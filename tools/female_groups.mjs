@@ -62,7 +62,8 @@ export const LAYERS = {
 export const groupFor = (layer, p) => (p.system === 'pregnancy' ? 'embarazo' : groupOf(layer, p.name))
 export const groupOf = (layer, name) => LAYERS[layer].rules.find(([, re]) => re.test(name))?.[0]
 // a 2 cm lymph-node detail model (Yao_*) and compact/trabecular "bone tissue" cut-aways that overlap the hip bones add noise, not anatomy
-export const EXCLUDE = (p) => p.id.startsWith('Yao_') || /(trabecular|compact) bone tissue/i.test(p.name)
+// VH_F knee soft tissue (menisci, cruciate/anterolateral ligaments, quadriceps tendon) sits 4-7 cm lateral to the BodyParts3D leg bones: it floats beside the knees
+export const EXCLUDE = (p) => p.id.startsWith('Yao_') || /(trabecular|compact) bone tissue/i.test(p.name) || /meniscus|articular disk of knee|cruciate ligament|anterolateral ligament|tendon of (left|right) quadriceps/i.test(p.name)
 // palatine tonsils are filed under "digestive" in the dataset
 // misfiled parts: tonsils sit under "digestive"; the iliotibial tract (a 61 cm fascia band) under "skeletal" and was drawn like bone;
 // brain nuclei / dura / choroid plexus / lacrimal bone under "sensory"; wrist retinacula are not sense organs
