@@ -15,5 +15,6 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm test
       - run: npm run build # tsc -b (strict typecheck) + vite build
       - run: npm audit --audit-level=high # known moderate/low: build-time workbox-build chain, see README

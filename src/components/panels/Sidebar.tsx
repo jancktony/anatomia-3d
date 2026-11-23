@@ -1,20 +1,23 @@
 import { Search, Eye, EyeOff, Brain } from 'lucide-react'
-import { systems, structures, type System } from '../../data/anatomy'
+import { systems, structures, regions, type Structure, type System } from '../../data/anatomy'
 import { useAnatomyStore } from '../../store/useAnatomyStore'
 
 const short = (label: string) => label.replace('Sistema ', '')
 
 export default function Sidebar() {
-  const { activeSystems, toggleSystem, searchQuery, setSearch, selectedId, setSelected, setIsolated } = useAnatomyStore()
+  const { activeSystems, toggleSystem, searchQuery, setSearch, selectedId, setSelected, setIsolated, groupBy, setGroupBy } = useAnatomyStore()
   const q = searchQuery.toLowerCase()
   const inner: readonly System[] = activeSystems.filter((x) => x !== 'piel')
   const visible = structures.filter((s) => {
     if (q && !s.name.toLowerCase().includes(q) && !s.latinName?.toLowerCase().includes(q) && !s.tags?.some((t) => t.toLowerCase().includes(q))) return false
     return !inner.length || inner.includes(s.system)
   })
-  const sections = systems
-    .map((sys) => ({ sys, items: visible.filter((s) => s.system === sys.id).sort((a, b) => a.name.localeCompare(b.name)) }))
-    .filter((g) => g.items.length)
+  const groups = groupBy === 'system'
+    ? systems.map((g) => ({ id: g.id as string, label: short(g.label), color: g.color, match: (s: Structure) => s.system === g.id }))
+    : regions.map((g) => ({ id: g.id, label: g.label, color: g.color, match: (s: Structure) => g.ids.includes(s.id) }))
+  const sections = groups
+    .map((g) => ({ g, items: visible.filter(g.match).sort((a, b) => a.name.localeCompare(b.name)) }))
+    .filter((x) => x.items.length)
 
   return (
     <aside className="w-80 shrink-0 h-full bg-[#0f1428]/95 backdrop-blur border-r border-white/5 flex flex-col">
@@ -47,9 +50,12 @@ export default function Sidebar() {
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {sections.length === 0 && <div className="text-xs text-slate-500 px-1">Sin resultados</div>}
-        {sections.map(({ sys, items }) => (
-          <section key={sys.id}>
-            <div className="flex items-center gap-2 text-xs text-slate-400 mb-1.5"><span className="size-2 rounded-full" style={{ background: sys.color }} />{short(sys.label)} ({items.length})</div>
+        <div className="flex rounded-lg bg-white/5 p-0.5 text-xs" role="group" aria-label="Agrupar por">
+          {(['system', 'region'] as const).map((m) => <button key={m} aria-pressed={groupBy === m} onClick={() => setGroupBy(m)} className={`flex-1 px-2 py-1 rounded-md ${groupBy === m ? 'bg-teal-500/25 text-teal-200' : 'text-slate-400'}`}>{m === 'system' ? 'Por sistema' : 'Por región'}</button>)}
+        </div>
+        {sections.map(({ g, items }) => (
+          <section key={g.id}>
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-1.5"><span className="size-2 rounded-full" style={{ background: g.color }} />{g.label} ({items.length})</div>
             <div className="grid grid-cols-2 gap-1.5">
               {items.map((s) => (
                 <button key={s.id} onClick={() => { setSelected(s.id); setIsolated(s.id) }} className={`text-left px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition ${selectedId === s.id ? 'ring-1 ring-teal-400/60 bg-teal-500/10' : ''}`}>

@@ -38,7 +38,7 @@ function CameraReset({ controlsRef }: { controlsRef: RefObject<ComponentRef<type
 export default function Scene() {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
   return (
-    <Canvas camera={{ position: [2.8, 1.6, 3.6], fov: 40 }} frameloop="demand" dpr={[1, 1.5]} gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}>
+    <Canvas camera={{ position: [2.8, 1.6, 3.6], fov: 40 }} frameloop="demand" onCreated={({ gl }) => { gl.localClippingEnabled = true }} dpr={[1, 1.5]} gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}>
       <color attach="background" args={['#0b1026']} />
       <fog attach="fog" args={['#0b1026', 9, 18]} />
       <ambientLight intensity={0.35} />
@@ -57,7 +57,7 @@ export default function Scene() {
         <mesh rotation-x={-Math.PI / 2} position={[0, -0.341, 0]} receiveShadow><circleGeometry args={[2.6, 64]} /><meshStandardMaterial color="#10183a" roughness={0.9} /></mesh>
         <ContactShadows resolution={512} position={[0, -0.335, 0]} opacity={0.5} scale={6} blur={3} far={4} />
       </Suspense>
-      <OrbitControls ref={controls} makeDefault minDistance={0.8} maxDistance={7} enableDamping dampingFactor={0.08} />
+      <OrbitControls ref={controls} makeDefault minDistance={0.15} maxDistance={7} enableDamping dampingFactor={0.08} />
       <CameraReset controlsRef={controls} />
     </Canvas>
   )

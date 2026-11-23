@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import type { System } from '../data/anatomy'
 
 export type Gender = 'male' | 'female'
+export type StudyMode = 'off' | 'quiz' | 'cards'
+export type GroupBy = 'system' | 'region'
 
 interface AnatomyState {
   gender: Gender
@@ -18,8 +20,14 @@ interface AnatomyState {
   setSearch: (q: string) => void
   showLabels: boolean
   toggleLabels: () => void
-  quizMode: boolean
-  setQuizMode: (v: boolean) => void
+  studyMode: StudyMode
+  setStudyMode: (m: StudyMode) => void
+  quizTarget: string | null
+  setQuizTarget: (id: string | null) => void
+  sectionY: number | null
+  setSectionY: (y: number | null) => void
+  groupBy: GroupBy
+  setGroupBy: (g: GroupBy) => void
   cameraReset: number
   resetCamera: () => void
 }
@@ -44,11 +52,17 @@ export const useAnatomyStore = create<AnatomyState>()(
       setSearch: (q) => set({ searchQuery: q }),
       showLabels: true,
       toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
-      quizMode: false,
-      setQuizMode: (v) => set({ quizMode: v }),
+      studyMode: 'off',
+      setStudyMode: (studyMode) => set({ studyMode, selectedId: null, isolatedId: null, quizTarget: null }),
+      quizTarget: null,
+      setQuizTarget: (quizTarget) => set({ quizTarget }),
+      sectionY: null,
+      setSectionY: (sectionY) => set({ sectionY }),
+      groupBy: 'system',
+      setGroupBy: (groupBy) => set({ groupBy }),
       cameraReset: 0,
       resetCamera: () => set((s) => ({ cameraReset: s.cameraReset + 1 })),
     }),
-    { name: 'atlas-anatomia-v3', partialize: (s) => ({ gender: s.gender, activeSystems: s.activeSystems, showLabels: s.showLabels }) }
+    { name: 'atlas-anatomia-v3', partialize: (s) => ({ gender: s.gender, groupBy: s.groupBy, activeSystems: s.activeSystems, showLabels: s.showLabels }) }
   )
 )
