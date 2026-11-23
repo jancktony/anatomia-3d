@@ -1,6 +1,7 @@
 // Female atlas (Human Reference Atlas v1.5 + BodyParts3D): which part goes into which structure id / layer file.
 // First matching rule wins; the last rule of each layer is the catch-all "-resto".
 export const LAYERS = {
+  senses_f: { systems: ['sensory'], rules: [['ojos', /./]] },
   bones_f: { systems: ['skeletal'], rules: [
     ['craneo', /skull|cranial|cranium|frontal bone|parietal|occipital|temporal bone|sphenoid|ethmoid|mandible|maxilla|zygomatic|nasal bone|lacrimal|palatine bone|vomer/i],
     ['columna-vertebral', /vertebra|sacrum|coccyx|atlas|axis|intervertebral/i],
@@ -58,4 +59,8 @@ export const LAYERS = {
 }
 
 export const groupOf = (layer, name) => LAYERS[layer].rules.find(([, re]) => re.test(name))?.[0]
+// a 2 cm lymph-node detail model (Yao_*) and compact/trabecular "bone tissue" cut-aways that overlap the hip bones add noise, not anatomy
+export const EXCLUDE = (p) => p.id.startsWith('Yao_') || /(trabecular|compact) bone tissue/i.test(p.name)
+// palatine tonsils are filed under "digestive" in the dataset
+export const layerFor = (p) => (EXCLUDE(p) ? undefined : /tonsil/i.test(p.name) ? 'lymph_f' : layerOf(p.system))
 export const layerOf = (system) => Object.entries(LAYERS).find(([, l]) => l.systems.includes(system))?.[0]

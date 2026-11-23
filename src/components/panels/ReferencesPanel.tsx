@@ -46,7 +46,7 @@ export default function ReferencesPanel({ onClose }: { onClose: () => void }) {
         <h3 className="font-medium mt-4 mb-1">Créditos de los modelos</h3>
         <ul className="text-xs text-muted list-disc pl-5 space-y-1">
           <li>Huesos, músculos, nervios, vasos, linfático y vísceras: <a className="underline" href="https://www.z-anatomy.com" target="_blank" rel="noreferrer">Z-Anatomy</a> (CC BY-SA 4.0), basado en BodyParts3D.</li>
-          <li>Anatomía femenina (capas de la mujer): <a className="underline" href="https://humanatlas.io" target="_blank" rel="noreferrer">Human Reference Atlas</a> (HuBMAP, CC BY 4.0) y BodyParts3D, vía el repositorio female-atlas.</li>
+          <li>Anatomía femenina (capas de la mujer): <a className="underline" href="https://humanatlas.io" target="_blank" rel="noreferrer">Human Reference Atlas</a> (HuBMAP, CC BY 4.0) y BodyParts3D, vía el repositorio female-atlas. Solo el sistema reproductor, los ojos, el urinario y algunas vísceras son propiamente femeninos; huesos, músculos y vasos son BodyParts3D (referencia general).</li>
           <li>Cuerpos hombre y mujer (piel): MakeHuman (CC0).</li>
           <li>Proyecto educativo independiente; no usa modelos ni marcas de los atlas comerciales citados.</li>
         </ul>

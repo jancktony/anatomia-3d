@@ -14,7 +14,10 @@ export const FILES: readonly LayerFile[] = [
   { url: u('viscera'), urlF: u('viscera_f'), system: 'visceras', color: '#c77dff', roughness: 0.55 },
   { url: u('vessels'), urlF: u('vessels_f'), system: 'vascular', color: '#c1121f', roughness: 0.45 },
   { urlF: u('repro_f'), system: 'reproductor', color: '#f472b6', roughness: 0.55 },
+  { urlF: u('senses_f'), system: 'sensorial', color: '#86efac', roughness: 0.3 },
 ]
+
+export const skinUrl = (g: 'male' | 'female'): string => u(g)
 
 export const layerUrl = (f: LayerFile, gender: 'male' | 'female'): string | undefined => (gender === 'female' ? f.urlF : f.url)
 

@@ -1,6 +1,6 @@
 # Atlas Anatómico 3D
 
-Last updated: 2026-11-23 04:00 PM CST
+Last updated: 2026-11-23 05:30 PM CST
 
 Visor anatómico interactivo (React 19, TypeScript, Vite, react-three-fiber, Zustand). Producción: https://atlas-anatomia-five.vercel.app
 
@@ -36,7 +36,7 @@ Regenerar: `python tools/build_bodies.py` (requiere los archivos en `tools/mh/`)
 El Service Worker (vite-plugin-pwa) precachea las pieles y sirve `.glb` con `CacheFirst`. Cada capa se descarga solo al activarla.
 
 ## Límites conocidos
-- Mujer: faltan ganglios linfáticos y amígdalas (el dataset no los trae como piezas separadas). La piel y las capas internas no coinciden en pose.
+- Mujer: del dataset `female-atlas` solo es realmente femenino (Human Reference Atlas) el sistema reproductor, el embarazo, los ojos, el urinario y parte de corazón, pulmones, sacro y vértebras. El resto (97 % de los músculos, 71 % de los huesos, vasos, nervios) es BodyParts3D, un modelo de referencia masculino. Su piel también es masculina, por eso la piel de la mujer es MakeHuman (con busto, cintura y cadera ajustados). Faltan el nervio ciático y los ganglios regionales. La piel y las capas internas no coinciden en pose.
 - La piel (brazos extendidos) no está alineada con las capas internas (brazos caídos).
 - Piel no tiene estructuras seleccionables (es la cubierta del cuerpo).
 - `npm audit`: 6 avisos moderate/low en `workbox-build` (cadena `vite-plugin-pwa`, solo build, sin arreglo disponible).

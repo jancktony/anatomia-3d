@@ -1,4 +1,4 @@
-export type System = 'esqueleto' | 'musculos' | 'nervioso' | 'vascular' | 'linfatico' | 'visceras' | 'piel' | 'reproductor'
+export type System = 'esqueleto' | 'musculos' | 'nervioso' | 'vascular' | 'linfatico' | 'visceras' | 'piel' | 'reproductor' | 'sensorial'
 
 export interface Structure {
   id: string
@@ -26,6 +26,7 @@ export const systems: { id: System; label: string; color: string }[] = [
   { id: 'visceras', label: 'Vísceras', color: '#9d4edd' },
   { id: 'piel', label: 'Piel y Tegumentos', color: '#fca311' },
   { id: 'reproductor', label: 'Sistema Reproductor', color: '#ec4899' },
+  { id: 'sensorial', label: 'Órganos de los Sentidos', color: '#22c55e' },
 ]
 
 export const structures: Structure[] = [
@@ -81,12 +82,13 @@ export const structures: Structure[] = [
   { id: 'mama', name: 'Glándula Mamaria', latinName: 'Glandula mammaria', system: 'reproductor', only: 'female', description: 'Glándula de la pared torácica anterior formada por lobulillos y tejido graso.', function: 'Producción de leche durante la lactancia', tags: ['torax', 'reproductor'] },
   { id: 'vagina', name: 'Vagina y Vulva', latinName: 'Vagina', system: 'reproductor', only: 'female', description: 'Conducto fibromuscular que une el cuello uterino con el vestíbulo vulvar.', function: 'Canal del parto y salida del flujo menstrual', tags: ['pelvis', 'reproductor'] },
   { id: 'embarazo', name: 'Embarazo (feto y placenta)', latinName: 'Graviditas', system: 'reproductor', only: 'female', description: 'Feto, placenta y membranas dentro del útero gestante.', function: 'Desarrollo fetal e intercambio materno-fetal', tags: ['pelvis', 'reproductor'] },
+  { id: 'ojos', name: 'Ojos', latinName: 'Oculi', system: 'sensorial', only: 'female', description: 'Globos oculares con córnea, iris, cristalino, cuerpo vítreo y retina.', function: 'Recepción de la luz y formación de la imagen visual', tags: ['cabeza', 'vision'] },
 ]
 
 export interface Region { id: string; label: string; color: string; ids: readonly string[] }
 
 export const regions: readonly Region[] = [
-  { id: 'cabeza-cuello', label: 'Cabeza y cuello', color: '#f4a261', ids: ['craneo', 'encefalo', 'amigdalas', 'ganglios-cervicales', 'tiroides'] },
+  { id: 'cabeza-cuello', label: 'Cabeza y cuello', color: '#f4a261', ids: ['craneo', 'encefalo', 'ojos', 'amigdalas', 'ganglios-cervicales', 'tiroides'] },
   { id: 'torax', label: 'Tórax', color: '#e63946', ids: ['esternon', 'costillas', 'corazon', 'aorta', 'pulmones', 'traquea-bronquios', 'esofago', 'timo', 'pectorales-mayor', 'mama'] },
   { id: 'abdomen-pelvis', label: 'Abdomen y pelvis', color: '#9d4edd', ids: ['higado', 'estomago', 'pancreas', 'vesicula-biliar', 'bazo', 'rinones', 'intestino-delgado', 'intestino-grueso', 'vejiga-urinaria', 'utero', 'ovarios', 'vagina', 'embarazo'] },
   { id: 'miembro-superior', label: 'Miembro superior', color: '#e85d5d', ids: ['humerus', 'radio', 'cubito', 'deltoides', 'biceps-braquial', 'triceps-braquial', 'ganglios-axilares'] },

@@ -5,6 +5,8 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Sistema Órganos de los Sentidos (ojos, solo mujer) y amígdalas en Linfático (mujer).
+- Cuerpo femenino MakeHuman con targets de busto, cadera y glúteos (`tools/build_bodies.py`).
 - Atlas femenino real: capas de la mujer (Human Reference Atlas v1.5 + BodyParts3D) con huesos, músculos, nervios, vasos, linfático y vísceras, y el nuevo sistema Reproductor (útero, ovarios, mama, vagina, embarazo). Conversión con `tools/build_female.mjs`.
 - Configuración: 6 paletas (Medianoche, rosa y blanco, todo rosa, rojo y negro, rojo y blanco, rosa y negro), modelo, suelo, giro automático y calidad gráfica; se recuerda entre sesiones.
 - Nombre de la estructura al pasar el cursor; precarga de la capa al apuntar la tarjeta.
@@ -30,5 +32,6 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - Primitivas geométricas de `HumanModel` y carpeta duplicada `atlas_anatomy/`.
 
 ### Fixed
+- Se descarta la piel de `female-atlas` (BodyParts3D, masculina), el tejido óseo duplicado sobre las caderas y un modelo de ganglio de 2 cm; el tema se aplica antes del primer pintado.
 - Encabezado GLB de los cuerpos (versión y longitud invertidas).
 - IDs con tilde (`cubito`, `encefalo`).

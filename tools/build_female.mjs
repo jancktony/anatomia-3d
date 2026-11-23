@@ -4,11 +4,11 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { join } from 'node:path'
 import { MeshoptSimplifier } from 'meshoptimizer'
-import { LAYERS, groupOf, layerOf } from './female_groups.mjs'
+import { LAYERS, groupOf, layerFor } from './female_groups.mjs'
 import { writeGlb } from './glb.mjs'
 
 const [,, src, out] = process.argv
-const BUDGET = { bones_f: 160000, muscles_f: 200000, nerves_f: 120000, vessels_f: 130000, lymph_f: 40000, viscera_f: 140000, repro_f: 80000 }
+const BUDGET = { bones_f: 160000, muscles_f: 200000, nerves_f: 120000, vessels_f: 130000, lymph_f: 40000, viscera_f: 140000, repro_f: 80000, senses_f: 40000 }
 const WORLD_H = 2.05, FEET_Y = -0.34 // matches the female skin in tools/build_bodies.py
 
 const atlas = JSON.parse(readFileSync(join(src, 'atlas.json'), 'utf8'))
@@ -40,7 +40,7 @@ function weld(pos, idx) {
 
 const byLayer = {}
 for (const p of atlas.parts) {
-  const l = layerOf(p.system)
+  const l = layerFor(p)
   if (l) (byLayer[l] ??= []).push(p)
 }
 

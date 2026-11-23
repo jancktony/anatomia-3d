@@ -23,10 +23,15 @@ def load_target(path, n):
         d[int(i)] = (float(x), float(y), float(z))
     return d
 
+# extra MakeHuman shape targets (CC0) as (file, weight): a more feminine silhouette
+EXTRA = {'female': [('female-young-averagemuscle-averageweight-maxcup-averagefirmness', 0.55), ('hip-scale-horiz-incr', 0.5), ('buttocks-volume-incr', 0.45)], 'male': []}
+
 def build(gender):
     v, vt, faces = load_obj(SRC + 'base.obj')
     for r in ('african', 'asian', 'caucasian'):
         v = v + load_target(f'{SRC}{r}-{gender}-young.target', len(v)) / 3
+    for name, w in EXTRA[gender]:
+        v = v + w * load_target(f'{SRC}{name}.target', len(v))
     remap, pos, uv, idx = {}, [], [], []
     for f in faces:
         ids = []
