@@ -26,8 +26,8 @@ const MUSCLE_GROUPS = [
   ['musculos-resto', /./],
 ]
 const NERVE_GROUPS = [
+  ['medula-espinal', /spinal|spino/i], // before encefalo: spinocerebellar/spinothalamic tracts (49 cm) contain "cerebel"/"thalam"
   ['encefalo', /(telencephalon|cerebell|diencephalon|midbrain|pons|medulla_oblongata|brainstem|corpus_callosum|thalam|hypothalam|gyrus|lobe|cortex|ventricle|falx|tentorium|aqueduct|pyramid)/i],
-  ['medula-espinal', /spinal_cord/i],
   ['nervio-ciatico', /^sciatic_nerve/i],
   ['nervioso-resto', /./],
 ]

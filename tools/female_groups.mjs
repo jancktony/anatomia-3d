@@ -1,14 +1,14 @@
 // Female atlas (Human Reference Atlas v1.5 + BodyParts3D): which part goes into which structure id / layer file.
 // First matching rule wins; the last rule of each layer is the catch-all "-resto".
 export const LAYERS = {
-  senses_f: { systems: ['sensory'], rules: [['oidos', /external ear|ear|auric/i], ['ojos', /./]] },
+  senses_f: { systems: ['sensory'], rules: [['oidos', /external ear|\bear\b|auric/i], ['ojos', /./]] },
   bones_f: { systems: ['skeletal'], rules: [
     ['craneo', /skull|cranial|cranium|frontal bone|parietal|occipital|temporal bone|sphenoid|ethmoid|mandible|maxilla|zygomatic|nasal bone|lacrimal|palatine bone|vomer/i],
     ['columna-vertebral', /vertebra|sacrum|coccyx|atlas|axis|intervertebral/i],
     ['esternon', /sternum|manubrium|xiphoid/i],
     ['costillas', /\brib\b|ribs|costal/i],
     ['humerus', /humerus/i], ['radio', /\bradius\b/i], ['cubito', /\bulna\b/i],
-    ['femur', /femur/i], ['tibia', /\btibia\b/i], ['perone', /fibula/i],
+    ['femur', /femur/i], ['tibia', /\btibia\b/i], ['perone', /\bfibula\b/i],
     ['esqueleto-resto', /./],
   ] },
   muscles_f: { systems: ['muscular'], rules: [
@@ -39,20 +39,24 @@ export const LAYERS = {
     ['linfatico-resto', /./],
   ] },
   viscera_f: { systems: ['digestive', 'respiratory', 'urinary', 'endocrine'], rules: [
-    ['higado', /liver|hepatic|porta hepatis|segment\d*$/i], ['estomago', /stomach|gastric(?! impression)/i], ['esofago', /esophag|oesophag/i],
-    ['pulmones', /lung|pulmon/i], ['traquea-bronquios', /trachea|bronch/i],
-    ['rinones', /kidney|renal/i], ['vejiga-urinaria', /bladder|ureter|urethra/i],
-    ['pancreas', /pancrea/i], ['vesicula-biliar', /gallbladder|bile|cystic/i],
+    // order matters: "bronchopulmonary segment" must not reach the liver, "gallbladder" must not reach "bladder", "hepatic flexure" is colon
+    ['pulmones', /lung|bronchopulmonary|lobar bronch/i],
+    ['vesicula-biliar', /gallbladder|bile|cystic|hepatic duct/i],
+    ['intestino-grueso', /colon|cecum|caecum|rectum|appendix|large intestine|anal canal|ileocaecal|ileocecal/i],
+    ['higado', /liver|porta hepatis|^(left|right) (anterolateral|superomedial|inferomedial|anterosuperior|posteroinferior|posterosuperior|posterolateral|posteromedial) segment\d*$/i],
+    ['estomago', /stomach|gastric(?! impression)/i], ['esofago', /esophag|oesophag/i],
+    ['traquea-bronquios', /trachea|bronch/i],
+    ['rinones', /kidney|renal/i], ['vejiga-urinaria', /urinary bladder|ureter|urethra|trigone/i],
+    ['pancreas', /pancrea/i],
     ['intestino-delgado', /duodenum|jejunum|ileum|small intestine/i],
-    ['intestino-grueso', /colon|cecum|caecum|rectum|appendix|large intestine|anal/i],
-    ['tiroides', /thyroid|parathyroid/i],
+    ['tiroides', /thyroid gland|parathyroid/i],
     ['visceras-resto', /./],
   ] },
   repro_f: { systems: ['reproductive', 'pregnancy'], rules: [
     ['embarazo', /fet|placent|amnio|umbilic|pregnan/i],
-    ['utero', /uter|fallopian|tube|cervix|endometri|myometri/i],
-    ['ovarios', /ovar/i],
-    ['mama', /mammary|breast|nipple|areol|lactif|adipose/i],
+    ['mama', /mammary|breast|nipple|areol|lactif|adipose|tubercle/i],
+    ['utero', /\buter|fallopian|cervix|endometri|myometri|cornua|salping|tube\b/i],
+    ['ovarios', /\bovary\b/i], // ligaments/mesovarium stay in -resto: they dwarf the 3 cm ovaries in the exploded grid
     ['vagina', /vagin|vulva|clitor|labi|hymen|perine/i],
     ['reproductor-resto', /./],
   ] },
@@ -70,8 +74,9 @@ export const EXCLUDE = (p) => p.id.startsWith('Yao_') || /(trabecular|compact) b
 export const layerFor = (p) => {
   if (EXCLUDE(p) || /retinaculum/i.test(p.name)) return undefined
   if (/tonsil/i.test(p.name)) return 'lymph_f'
-  if (/iliotibial tract/i.test(p.name)) return 'muscles_f'
+  if (/iliotibial tract/i.test(p.name) || (p.system === 'skeletal' && /fibularis|tibialis|subscapularis|levator scapulae/i.test(p.name))) return 'muscles_f' // muscles filed as skeletal
   if (p.system === 'sensory' && /nuclear|nucleus|dura mater|choroid plexus/i.test(p.name)) return 'nerves_f'
+  if (/(third|fourth|lateral) ventricle|interventricular foramen/i.test(p.name)) return 'nerves_f' // brain ventricles are filed under "cardiac"
   if (/lacrimal bone/i.test(p.name)) return 'bones_f'
   return layerOf(p.system)
 }

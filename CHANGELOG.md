@@ -32,6 +32,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 - Primitivas geométricas de `HumanModel` y carpeta duplicada `atlas_anatomy/`.
 
 ### Fixed
+- Auditoría de agrupaciones (revisada con el despiece de cada sistema): los 18 segmentos broncopulmonares estaban en Hígado (los pulmones de la mujer no existían); la vesícula biliar estaba en Vejiga; la flexura hepática, en Hígado; el tubérculo areolar, en Útero (y el útero entero en `-resto` por un carácter de control en una regex); los músculos fibulares/tibiales, en Peroné; el cartílago tiroides figuraba como Tiroides; los ventrículos cerebrales estaban en Corazón; los ovarios se mostraban como sus ligamentos. En el hombre, los tractos espinales de 49 cm estaban en el Encéfalo.
 - Mujer: menisco, ligamentos cruzados, ligamento anterolateral y tendón del cuádriceps (conjunto femenino, 4-7 cm más lateral que los huesos de BodyParts3D) se descartan; flotaban junto a las rodillas.
 - Mujer: el tracto iliotibial (fascia de 61 cm archivada como hueso) pasa a la capa muscular; núcleos cerebrales, duramadre y plexo coroideo al encéfalo; hueso lagrimal al cráneo; retináculos de muñeca descartados; el oído externo es ahora la estructura Oído Externo.
 - Embarazo: las 8 piezas del sistema `pregnancy` (placa basal, placa coriónica, amnios, cordón) iban sueltas delante del abdomen; ahora forman la estructura Embarazo, visible solo al seleccionarla.
