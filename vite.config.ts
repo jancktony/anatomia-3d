@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: process.env.BASE_PATH ?? '/',
   build: { chunkSizeWarningLimit: 1200 }, // three.js lazy chunk is inherently ~1.1MB
   plugins: [
     react(),

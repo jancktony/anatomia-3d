@@ -4,7 +4,7 @@ import { DoubleSide, FrontSide, type Mesh } from 'three'
 import { useClip } from './clip'
 import { useAnatomyStore, type Gender } from '../../store/useAnatomyStore'
 
-const url = (g: Gender) => `/models/${g}.glb`
+const url = (g: Gender) => `${import.meta.env.BASE_URL}models/${g}.glb`
 export const preloadBodies = () => (['male', 'female'] as const).forEach((g) => useGLTF.preload(url(g)))
 
 export function Body() {

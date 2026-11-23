@@ -5,6 +5,7 @@ Formato [Keep a Changelog](https://keepachangelog.com).
 ## [Unreleased]
 
 ### Added
+- Unión con el historial del repo anterior (`origin/main`): su app JS archivada en `legacy/`, créditos en `public/`, workflow de Pages adaptado (`BASE_PATH`).
 - Estudio: quiz con 3 niveles de dificultad y tarjetas; la estructura se aísla y la cámara la encuadra.
 - Agrupar por sistema o por región; corte axial con deslizador; panel de referencias y reseñas con fuentes.
 - Tests (vitest) para la lógica del quiz y la integridad de los datos; paso `npm test` en CI.
